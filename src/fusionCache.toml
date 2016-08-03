@@ -1,0 +1,3 @@
+[fusionCache]
+tcpListenPort=6380
+logLevel="ERROR"
