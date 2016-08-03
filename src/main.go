@@ -13,7 +13,7 @@ import (
 
 var (
 	mlog       *log.Logger
-	filePath   *string = flag.String("f", "/etc/fusionCache.toml", "keep the config info")
+	filePath   *string = flag.String("f", "/etc/marginCache.toml", "keep the config info")
 	CacheSet   [KEYHASHMAX]*hashmap.Cache
 	GstartTime = time.Now().Unix()
 )
@@ -21,7 +21,7 @@ var (
 func main() {
 	flag.Parse()
 	var err error
-	Param, err = zlconfig.Readfile(*filePath, "fusionCache")
+	Param, err = zlconfig.Readfile(*filePath, "marginCache")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
