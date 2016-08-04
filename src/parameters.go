@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"package/zlconfig"
+	"github.com/margin-cache/zlconfig"
 )
 
 type defaultOp struct {

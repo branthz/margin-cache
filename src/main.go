@@ -4,9 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"package/hashmap"
-	"package/log"
-	"package/zlconfig"
+	"github.com/margin-cache/hashmap"
+	"github.com/margin-cache/log"
+	"github.com/margin-cache/zlconfig"
 	"runtime"
 	"time"
 )

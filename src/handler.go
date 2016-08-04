@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"package/hashmap"
+	"github.com/margin-cache/hashmap"
 	"strconv"
 	"strings"
 	"time"

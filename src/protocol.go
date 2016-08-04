@@ -1,8 +1,8 @@
 package main
 
 import (
-	"package/adler32"
-	"package/hashmap"
+	"github.com/margin-cache/adler32"
+	"github.com/margin-cache/hashmap"
 	"sync"
 )
 
