@@ -7,6 +7,7 @@ margin will record the init time so that the client-side can maintain the heartb
 client can judge whether server has restarted by the value of time if needed.
 
 ##Support Command
+refer to http://redis.io/commands
 * set key value                                             设置key/value
 * get key                                                   获取key值
 * del key                                                   删除key
@@ -30,7 +31,6 @@ client can judge whether server has restarted by the value of time if needed.
 
 ----------------------------------------------------
 ##TODO:
-1.通信协议扩展：HTTP
-2.扩展功能如链表/集合/发布/订阅等功能
-3.缓存持久化
+1.Support the Restful api
+2.Support functions like list/set/publish/subscribe ...
 
