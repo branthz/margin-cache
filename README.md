@@ -7,27 +7,36 @@ margin will record the init time so that the client-side can maintain the heartb
 client can judge whether server has restarted by the value of time if needed.
 
 ##Support Command
-refer to http://redis.io/commands
-* set key value                                             设置key/value
-* get key                                                   获取key值
-* del key                                                   删除key
-* exists key                                                查询key值存在
-* setex key value time                                      设置带超时key/value
-* hset key field value                                      设置hash表的域/值
-* hget key field                                            获取hash表中域值
-* hsetex  key field value time                              设置hash表的域/值（带超时）
-* hdel key field                                            删除hash表中域
-* hexists key field                                         判断hash表中域存在
-* hdestroy key                                              删除hash表
-* DECR key 						  整形值减1
-* DECRBY key count					  整形值减count				
-* INCR   key 						  整形值增加1
-* INCRBY  key count					  整形值增加count
-* PING							  网络状态检测
-* HGETALL key						  获取hash表中所有的域/值(可直接保存到map[field][]byte中)
-* HMSET key map						  一次设置多个field/value，以map的方式提供输入参数
-* HMGET key field1 field2 ...				  一次获取多个域值
-* KEYS *      						  获取所有的key值，目前只支持获取所有key
+Apis can refer to http://redis.io/commands,Now it supports the following cmd:
+* set key value                                      
+* get key                                                
+* del key                                               
+* exists key                                             
+* setex key value time                                   
+* hset key field value                                   
+* hget key field                                            
+* hsetex  key field value time                           
+* hdel key field                                         
+* hexists key field                                     
+* hdestroy key                                            
+* DECR key 						 
+* DECRBY key count									
+* INCR   key 						  
+* INCRBY  key count					 
+* PING							
+* HGETALL key						  
+* HMSET key map						  
+* HMGET key field1 field2 ...				  
+* KEYS *      						  
+
+## Getting Started
+### Installing
+
+To start using margin-cache, install Go and run `go get`:
+
+```sh
+$ go get github.com/Brant-Zhang/margin-cache
+```
 
 ----------------------------------------------------
 ##TODO:
