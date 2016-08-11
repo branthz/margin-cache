@@ -1,4 +1,4 @@
-package cmargin
+package cmargin_test 
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ func main() {
 func init(){
 	runtime.GOMAXPROCS(4)
     	//client.Addr = "192.168.206.110:6380"
-    	client.Addr = "192.168.1.191:6380"
+    	client.Addr = "10.10.2.103:6380"
 	client.MaxPoolSize=5
 }
 
