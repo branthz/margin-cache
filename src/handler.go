@@ -23,8 +23,6 @@ type tclient struct {
 }
 
 func newClient(pconn *net.TCPConn) *tclient {
-	increment(statsMap["Fusion.clientSum"])
-	increment(statsMap["Fusion.clientNow"])
 	return &tclient{
 		conn:    pconn,
 		wbuffer: bytes.NewBuffer(make([]byte, 1024)),
@@ -38,7 +36,6 @@ func (tc *tclient) Clear() {
 	tc.wbuffer = nil
 	tc.rder = nil
 	termList.Remove(tc.le)
-	decrement(statsMap["Fusion.clientNow"])
 }
 
 func tListenRequest() {

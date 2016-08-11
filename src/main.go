@@ -44,7 +44,6 @@ func main() {
 	}
 
 	//gcacher = hashmap.New(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-	go showStatus()
 	//fd, _ := os.Create("./aaa.pprof")
 	//pprof.StartCPUProfile(fd)
 	//pprof.WriteHeapProfile(fd)
