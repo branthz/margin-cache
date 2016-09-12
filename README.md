@@ -7,7 +7,7 @@ margin will record the init time so that the client-side can maintain the heartb
 client can judge whether server has restarted by the value of time if needed.
 
 ##Support Command
-Apis can refer to http://redis.io/commands,Now it supports the following cmd:
+Apis can refer to http://redis.io/commands, Now it supports the following cmd:
 * set key value                                      
 * get key                                                
 * del key                                               
