@@ -35,7 +35,7 @@ Apis can refer to http://redis.io/commands, Now it supports the following cmd:
 To start using margin-cache, install Go and run `go get`:
 
 ```sh
-$ go get github.com/Brant-Zhang/margin-cache
+$ go get github.com/branthz/margin-cache
 ```
 
 ----------------------------------------------------
