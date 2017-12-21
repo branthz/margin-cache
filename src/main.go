@@ -4,11 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"github.com/margin-cache/hashmap"
-	"github.com/margin-cache/log"
-	"github.com/margin-cache/zlconfig"
 	"runtime"
 	"time"
+
+	"github.com/branthz/utarrow/lib/log"
+	"github.com/branthz/utarrow/zconfig"
+	"github.com/margin-cache/hashmap"
 )
 
 var (
@@ -21,7 +22,7 @@ var (
 func main() {
 	flag.Parse()
 	var err error
-	Param, err = zlconfig.Readfile(*filePath, "marginCache")
+	Param, err = zconfig.Readfile(*filePath, "marginCache")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

@@ -2,20 +2,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/margin-cache/zlconfig"
+
+	"github.com/branthz/utarrow/zconfig"
 )
 
 type defaultOp struct {
 	outPort  int
-	loglevel string
+	loglevel int
 }
 
-var Param zlconfig.Result
+var Param zconfig.Result
 var CFV *defaultOp
 
 func newConfig() *defaultOp {
 	op := new(defaultOp)
-	op.loglevel = "ERROR"
+	op.loglevel = 4
 	return op
 }
 
@@ -23,7 +24,7 @@ func uploadParameters() error {
 	var err error
 	CFV = newConfig()
 
-	CFV.loglevel, err = Param.GetString("logLevel")
+	CFV.loglevel, err = Param.GetInt("logLevel")
 	if err != nil {
 		return err
 	}
@@ -34,7 +35,7 @@ func uploadParameters() error {
 	}
 
 	//get this server inner's addr
-	fmt.Printf("tcp listen port:%d\n", CFV.outPort)
+	fmt.Printf("tcp listen on port:%d\n", CFV.outPort)
 
 	return nil
 }
