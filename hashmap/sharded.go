@@ -1,6 +1,7 @@
-package hashmap 
+package hashmap
 
 import (
+	"bytes"
 	"crypto/rand"
 	"math"
 	"math/big"
@@ -10,7 +11,7 @@ import (
 	"time"
 )
 
-// This is an experimental and unexported (for now) attempt at making a cache
+// Dbs :This is an experimental and unexported (for now) attempt at making a cache
 // with better algorithmic complexity than the standard one, namely by
 // preventing write locks of the entire cache when an item is added. As of the
 // time of writing, the overhead of selecting buckets results in cache
@@ -18,8 +19,8 @@ import (
 // total cache sizes, and faster for larger ones.
 //
 // See cache_test.go for a few benchmarks.
-
-type unexportedShardedCache struct {
+// exported?
+type Dbs struct {
 	*shardedCache
 }
 
@@ -82,8 +83,25 @@ func (sc *shardedCache) Get(k string) (interface{}, bool) {
 	return sc.bucket(k).Get(k)
 }
 
+func (sc *shardedCache) Getallkey(buff *bytes.Buffer) (int, error) {
+	var cn, n int
+	var err error
+	for _, v := range sc.cs {
+		n, err = v.Getallkey(buff)
+		if err != nil {
+			return cn, err
+		}
+		cn += n
+	}
+	return cn, err
+}
+
 func (sc *shardedCache) Increment(k string, n int64) error {
 	return sc.bucket(k).Increment(k, n)
+}
+
+func (sc *shardedCache) IncrementInt64(k string, n int64) (int64, error) {
+	return sc.bucket(k).IncrementInt64(k, n)
 }
 
 func (sc *shardedCache) IncrementFloat(k string, n float64) error {
@@ -94,6 +112,9 @@ func (sc *shardedCache) Decrement(k string, n int64) error {
 	return sc.bucket(k).Decrement(k, n)
 }
 
+func (sc *shardedCache) DecrementInt64(k string, n int64) (int64, error) {
+	return sc.bucket(k).DecrementInt64(k, n)
+}
 func (sc *shardedCache) Delete(k string) {
 	sc.bucket(k).Delete(k)
 }
@@ -141,7 +162,7 @@ func (j *shardedJanitor) Run(sc *shardedCache) {
 	}
 }
 
-func stopShardedJanitor(sc *unexportedShardedCache) {
+func stopShardedJanitor(sc *Dbs) {
 	sc.janitor.stop <- true
 }
 
@@ -178,12 +199,16 @@ func newShardedCache(n int, de time.Duration) *shardedCache {
 	return sc
 }
 
-func unexportedNewSharded(defaultExpiration, cleanupInterval time.Duration, shards int) *unexportedShardedCache {
+//MaxDBs define buckets num.
+const MaxDBs = 30
+
+//DBSetup init dbs
+func DBSetup(defaultExpiration, cleanupInterval time.Duration) *Dbs {
 	if defaultExpiration == 0 {
 		defaultExpiration = -1
 	}
-	sc := newShardedCache(shards, defaultExpiration)
-	SC := &unexportedShardedCache{sc}
+	sc := newShardedCache(MaxDBs, defaultExpiration)
+	SC := &Dbs{sc}
 	if cleanupInterval > 0 {
 		runShardedJanitor(sc, cleanupInterval)
 		runtime.SetFinalizer(SC, stopShardedJanitor)

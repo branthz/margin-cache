@@ -9,11 +9,11 @@ import (
 
 const (
 	// Log Level
-	Fatal = 0
-	Error = 1
-	Warn  = 2
-	Info  = 3
-	Debug = 4
+	FATAL = 0
+	ERROR = 1
+	WARN  = 2
+	INFO  = 3
+	DEBUG = 4
 )
 
 /*
@@ -29,9 +29,9 @@ type Logger struct {
 }
 
 var (
-	defaultLogLevel = Debug
-	DefaultLogger   = &Logger{log: log.New(os.Stdout, "", log.LstdFlags), file: nil, level: defaultLogLevel}
-	errLevels       = []int{Fatal, Error, Warn, Info, Debug}
+	defaultLogLevel = DEBUG
+	defaultLogger   = &Logger{log: log.New(os.Stdout, "", log.LstdFlags), file: nil, level: defaultLogLevel}
+	errLevels       = []int{FATAL, ERROR, WARN, INFO, DEBUG}
 	strLevels       = []string{"FATAL", "ERROR", "WARN", "INFO", "DEBUG"}
 	selfHold        *Logger
 )
@@ -58,7 +58,7 @@ func New(file string, levelIn int) (*Logger, error) {
 	if file != "" {
 		f, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
-			return DefaultLogger, err
+			return defaultLogger, err
 		}
 		logger := log.New(f, "", log.LstdFlags)
 		return &Logger{log: logger, file: f, level: level}, nil
@@ -76,61 +76,61 @@ func Close() error {
 
 // Error use the Error log level write data
 func Error(format string, args ...interface{}) {
-	if selfHold.level >= Error {
-		selfHold.logCore(Error, format, args...)
+	if selfHold.level >= ERROR {
+		selfHold.logCore(ERROR, format, args...)
 	}
 }
 func Errorln(args ...interface{}) {
-	if selfHold.level >= Error {
-		selfHold.logCore(Error, "", args...)
+	if selfHold.level >= ERROR {
+		selfHold.logCore(ERROR, "", args...)
 	}
 }
 
 // Debug use the Error log level write data
 func Debug(format string, args ...interface{}) {
-	if selfHold.level >= Debug {
-		selfHold.logCore(Debug, format, args...)
+	if selfHold.level >= DEBUG {
+		selfHold.logCore(DEBUG, format, args...)
 	}
 }
 func Debugln(args ...interface{}) {
-	if selfHold.level >= Debug {
-		selfHold.logCore(Debug, "", args...)
+	if selfHold.level >= DEBUG {
+		selfHold.logCore(DEBUG, "", args...)
 	}
 }
 
 // Info use the Info log level write data
 func Info(format string, args ...interface{}) {
-	if selfHold.level >= Info {
-		selfHold.logCore(Info, format, args...)
+	if selfHold.level >= INFO {
+		selfHold.logCore(INFO, format, args...)
 	}
 }
 func Infoln(args ...interface{}) {
-	if selfHold.level >= Info {
-		selfHold.logCore(Info, "", args...)
+	if selfHold.level >= INFO {
+		selfHold.logCore(INFO, "", args...)
 	}
 }
 
 // Warn use the Warn level write data
 func Warn(format string, args ...interface{}) {
-	if selfHold.level >= Warn {
-		selfHold.logCore(Warn, format, args...)
+	if selfHold.level >= WARN {
+		selfHold.logCore(WARN, format, args...)
 	}
 }
 func Warnln(args ...interface{}) {
-	if selfHold.level >= Warn {
-		selfHold.logCore(Warn, "", args...)
+	if selfHold.level >= WARN {
+		selfHold.logCore(WARN, "", args...)
 	}
 }
 
 // Fatal use the Fatal level write data
 func Fatal(format string, args ...interface{}) {
-	if selfHold.level >= Fatal {
-		selfHold.logCore(Fatal, format, args...)
+	if selfHold.level >= FATAL {
+		selfHold.logCore(FATAL, format, args...)
 	}
 }
 func Fatalln(args ...interface{}) {
-	if selfHold.level >= Fatal {
-		selfHold.logCore(Fatal, "", args...)
+	if selfHold.level >= FATAL {
+		selfHold.logCore(FATAL, "", args...)
 	}
 }
 

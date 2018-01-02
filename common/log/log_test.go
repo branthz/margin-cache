@@ -5,17 +5,16 @@ import (
 )
 
 func TestLogwrite(t *testing.T) {
-	loger, err := New("/tmp/log", Debug)
+	err := Setup("/tmp/log", DEBUG)
 	if err != nil {
-		loger.Error("stdout error (%v)", err)
-		t.Error("log error")
+		t.Error("log error", err)
 	}
-	loger.Info("good morning brant!")
-	loger.Debug("hello 1")
-	loger.Warn("hello 2")
-	var a []byte = nil
+	Info("good morning brant!")
+	Debugln("hello 1")
+	Warnln("hello 2")
+	var a []byte
 	var b int
-	loger.Debug("nihao--%s--%v", a, b)
+	Debugln("nihao--%s--%v", a, b)
 }
 
 /*

@@ -1,9 +1,10 @@
-package main
+package handle
 
 import (
 	"hash/adler32"
-	"github.com/margin-cache/hashmap"
 	"sync"
+
+	"github.com/branthz/margin-cache/hashmap"
 )
 
 // for access request msg format--------------------------------------------------
