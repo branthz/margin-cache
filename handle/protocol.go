@@ -65,23 +65,6 @@ func newHmapst() *hmapST {
 	return st
 }
 
-/*
-type reqHead struct {
-	magic     uint16
-	msgtype   uint16
-	clientid  uint16
-	clusterid uint16
-	datalen   uint32
-	status    uint32
-	seq       uint32
-}
-
-
-var (
-	reqHeadLen = int(unsafe.Sizeof(reqHead{}))
-)
-*/
-
 type FusionError string
 
 func (err FusionError) Error() string { return "Fusion Error: " + string(err) }
