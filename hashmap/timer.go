@@ -1,9 +1,4 @@
-// Copyright 2009 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// Time-related runtime and pieces of package time.
-
+//timer manage
 package hashmap
 
 import (
@@ -14,23 +9,16 @@ import (
 	"time"
 )
 
-// Package time knows the layout of this structure.
-// For GOOS=nacl, package syscall knows the layout of this structure.
 type timer struct {
 	i int // heap index
-
 	// Timer wakes up at when, and then at when+period, ... (period > 0 only)
 	// each time calling f(arg, now) in the timer goroutine, so f must be
 	// a well-behaved function and not block.
 	when   int64
 	period int64
-	f      func(interface{}, uintptr)
+	f      func(interface{},string)
 	arg    interface{}
-	seq    uintptr
-}
-
-func timerAction(a interface{}, b uintptr) {
-	fmt.Println(a, int64(b))
+	key    string
 }
 
 type timerst struct {
@@ -140,7 +128,6 @@ func deltimer(t *timer) bool {
 // It sleeps until the next event in the timers heap.
 // If addtimer inserts a new earlier event, it wakes timerproc early.
 func timerproc() {
-	//timers.gp = getg()
 	for {
 		timers.lock.Lock()
 		timers.sleeping = false
@@ -176,9 +163,9 @@ func timerproc() {
 			}
 			f := t.f
 			arg := t.arg
-			seq := t.seq
+			key := t.key
 			timers.lock.Unlock()
-			f(arg, seq)
+			f(arg, key)
 			timers.lock.Lock()
 		}
 		if delta < 0 {
@@ -244,7 +231,6 @@ func (n *note) notetsleepg(t int64) {
 }
 
 // Heap maintenance algorithms.
-
 func siftupTimer(i int) {
 	t := timers.t
 	when := t[i].when
@@ -314,7 +300,7 @@ func main() {
 		t.when = time.Now().UnixNano() + 1e9*getRand()
 		t.f = timerAction
 		t.arg = "hello"
-		t.seq = uintptr(i)
+		t.seq = uint32(i)
 		addtimer(t)
 	}
 	stop := make(chan bool)

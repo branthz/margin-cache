@@ -129,7 +129,7 @@ func readResponse(tc *tclient) (res []byte, err error) {
 			err = fmt.Errorf("cmd size less than 0")
 			return
 		}
-		//log.Debug("request parameters:")
+		log.Debug("request parameters:")
 		req := make([][]byte, size)
 		for i := 0; i < size; i++ {
 			req[i], err = readBulk(tc.rder, "")
@@ -139,10 +139,10 @@ func readResponse(tc *tclient) (res []byte, err error) {
 			if err != nil {
 				return
 			}
-			//fmt.Printf("%s-----\n", string(req[i]))
+			fmt.Printf("%s-----\n", string(req[i]))
 			// dont read end of line as might not have been bulk
 		}
-		//fmt.Printf("\n")
+		fmt.Printf("\n")
 		tc.wbuffer.Reset()
 
 		switch string(req[0]) {
@@ -232,100 +232,20 @@ func readResponse(tc *tclient) (res []byte, err error) {
 		case "EXISTS":
 			_, ok := CacheSet.Get(string(req[1]))
 			if !ok {
-				//res = fmt.Sprintf(":0\r\n")
 				tc.wbuffer.WriteString(":0\r\n")
 			} else {
-				//res = fmt.Sprintf(":1\r\n")
 				tc.wbuffer.WriteString(":1\r\n")
 			}
 		case "HEXISTS":
-
-			v, ok := hmapRead(string(req[1]))
+			ok:=CacheSet.Hexist(string(req[1]),string(req[2]))
 			if !ok {
-				//res = fmt.Sprintf(":0\r\n")
 				tc.wbuffer.WriteString(":0\r\n")
 			} else {
-				_, ok = v.Get(string(req[2]))
-				if !ok {
-					//res = fmt.Sprintf(":0\r\n")
-					tc.wbuffer.WriteString(":0\r\n")
-				} else {
-					//res = fmt.Sprintf(":1\r\n")
-					tc.wbuffer.WriteString(":1\r\n")
-				}
+				tc.wbuffer.WriteString(":1\r\n")
 			}
 
 		case "HSET":
-			v, ok := hmapRead(string(req[1]))
-			if !ok {
-				v = hashmap.New(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-				hmapWrite(string(req[1]), v)
-			}
-			v.Set(string(req[2]), req[3], hashmap.NoExpiration)
-			//res = fmt.Sprintf(":1\r\n")
-			tc.wbuffer.WriteString(":1\r\n")
-
-		case "HMSET":
-			if size%2 != 0 || size == 2 {
-				err = fmt.Errorf("parameters error")
-				return
-			}
-			v, ok := hmapRead(string(req[1]))
-			if !ok {
-				v = hashmap.New(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-				hmapWrite(string(req[1]), v)
-			}
-
-			for i := 2; i < size; i = i + 2 {
-				v.Set(string(req[i]), req[i+1], hashmap.NoExpiration)
-			}
-			//log.Debug("hmset:size-%d", size)
-			tc.wbuffer.WriteString(":1\r\n")
-
-		case "HGET":
-			v, ok := hmapRead(string(req[1]))
-			if !ok {
-				err = fmt.Errorf("not find the key:%s", string(req[1]))
-				return
-			}
-			dst, found := v.Get(string(req[2]))
-			if !found {
-				err = fmt.Errorf("not find the key:%s", string(req[2]))
-				return
-			} else {
-				vs := dst.([]byte)
-				//res = fmt.Sprintf("$%d\r\n%s\r\n", len(vs), vs)
-				fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(vs), vs)
-			}
-		case "HMGET":
-			v, ok := hmapRead(string(req[1]))
-			if !ok {
-				err = fmt.Errorf("not find the key:%s", string(req[1]))
-				return
-			}
-			//log.Debug("hmget,size:%d", size)
-			fmt.Fprintf(tc.wbuffer, "*%d\r\n", size-2)
-			for i := 2; i < size; i++ {
-				dst, found := v.Get(string(req[i]))
-				if !found {
-					err = fmt.Errorf("not find the field:%s", string(req[i]))
-					return
-				}
-				vs := dst.([]byte)
-				//res = fmt.Sprintf("$%d\r\n%s\r\n", len(vs), vs)
-				fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(vs), vs)
-			}
-
-		case "HDEL":
-			v, ok := hmapRead(string(req[1]))
-			if ok {
-				v.Delete(string(req[2]))
-			}
-			//res = fmt.Sprintf(":1\r\n")
-			tc.wbuffer.WriteString(":1\r\n")
-
-		case "HDESTROY":
-			hmapdel(string(req[1]))
+			CacheSet.Hset(string(req[1]),string(req[2]),string(req[3]),hashmap.NoExpiration)
 			tc.wbuffer.WriteString(":1\r\n")
 
 		case "HSETEX":
@@ -333,32 +253,62 @@ func readResponse(tc *tclient) (res []byte, err error) {
 				err = fmt.Errorf("parameters error")
 				return
 			}
-			v, ok := hmapRead(string(req[1]))
-			if !ok {
-				//return nil,fmt.Errorf("not find the key:%s",string(req[1]))
-				v = hashmap.New(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-				hmapWrite(string(req[1]), v)
-			}
 			expi, err = strconv.Atoi(string(req[3]))
 			if err != nil {
 				err = fmt.Errorf("setex expected a time expiration")
 				return
 			}
-			v.Set(string(req[2]), req[4], time.Duration(expi*1e9))
-			//res = fmt.Sprintf(":0\r\n")
+			CacheSet.Hset(string(req[1]),string(req[2]),string(req[3]),time.Duration(expi*1e9))
 			tc.wbuffer.WriteString(":0\r\n")
+
+		case "HMSET":
+			if size%2 != 0 || size == 2 {
+				err = fmt.Errorf("parameters error")
+				return
+			}
+			CacheSet.Hmset(string(req[1]),req[2:size])
+			tc.wbuffer.WriteString(":1\r\n")
+
+		case "HGET":
+			var v interface{}
+			v,err=CacheSet.Hget(string(req[1]),string(req[2]))
+			if err!=nil {
+				return
+			}
+				vs := v.([]byte)
+				fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(vs), vs)
+
+		case "HMGET":
+			if size<3{
+				err = fmt.Errorf("parameters error")
+				return
+			}
+			var data [][]byte
+			data,err=CacheSet.Hmget(string(req[1]),req[2:size])
+			if err!=nil {
+				return
+			}
+			//log.Debug("hmget,size:%d", size)
+			fmt.Fprintf(tc.wbuffer, "*%d\r\n", size-2)
+			for i:=0;i<len(data);i++{
+				fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(data[i]), data[i])
+			}
+
+		case "HDEL":
+			CacheSet.Hdel(string(req[1]),string(req[2]))
+			//res = fmt.Sprintf(":1\r\n")
+			tc.wbuffer.WriteString(":1\r\n")
+
+		case "HDESTROY":
+			CacheSet.Hdestroy(string(req[1]))
+			tc.wbuffer.WriteString(":1\r\n")
+
 
 		case "KEYS":
 			if size < 2 {
 				err = fmt.Errorf("parameters error")
 				return
 			}
-			/*
-				var prefix string == ""
-				if req[1] != "*" {
-					prefix = strings.TrimSuffix("*")
-				}
-			*/
 
 			var count int = 0
 			_, err = fmt.Fprintf(tc.wbuffer, "*%10d\r\n", count)
@@ -377,14 +327,8 @@ func readResponse(tc *tclient) (res []byte, err error) {
 				err = fmt.Errorf("parameters error")
 				return
 			}
-			ke, ok := hmapRead(string(req[1]))
-			if !ok {
-				err = fmt.Errorf("not find the key:%s", string(req[1]))
-				return
-			}
-
-			err = ke.Getall(tc.wbuffer)
-			if err != nil {
+			err=CacheSet.Hgetall(string(req[1]),tc.wbuffer)
+			if err!=nil{
 				return
 			}
 			//fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n",count,,)

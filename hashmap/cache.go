@@ -31,8 +31,6 @@ const (
 	// passing in the same expiration duration as was given to New()
 	// when the cache was created (e.g. 5 minutes.)
 	DefaultExpiration time.Duration = 0
-	//DefaultCleanUpInterval clean the cache expied items
-	DefaultCleanUpInterval time.Duration = 60 * 1e9
 )
 
 //Cache to be exposed
@@ -46,6 +44,7 @@ type cache struct {
 	items             map[string]Item
 	mu                sync.RWMutex
 	onEvicted         func(string, interface{})
+	id  uint32
 }
 
 // Add an item to the cache, replacing any existing item. If the duration is 0
@@ -59,6 +58,7 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 	}
 	if d > 0 {
 		e = time.Now().Add(d).UnixNano()
+		addtimer(newtimer(e,c,k))	
 	}
 	c.mu.Lock()
 	c.items[k] = Item{
@@ -918,6 +918,16 @@ func (c *cache) DecrementFloat64(k string, n float64) (float64, error) {
 	return nv, nil
 }
 
+
+func newtimer(d int64,c *cache,k string) *timer{
+	return &timer{when:d,key:k,f:timerAction,arg:c}
+}
+
+func timerAction(a interface{}, b string) {
+	a.(*cache).Delete(b)
+	//defaultDbs.cs[b].Delete(a.(string))	
+}
+
 // Delete an item from the cache. Does nothing if the key is not in the cache.
 func (c *cache) Delete(k string) {
 	c.mu.Lock()
@@ -1073,13 +1083,14 @@ func (c *cache) Flush() {
 	c.items = map[string]Item{}
 	c.mu.Unlock()
 }
-func newCache(de time.Duration, m map[string]Item) *cache {
+
+func newCache(de time.Duration) *cache {
 	if de == 0 {
 		de = -1
 	}
 	c := &cache{
 		defaultExpiration: de,
-		items:             m,
+		items:             make(map[string]Item),
 	}
 	return c
 }
@@ -1089,6 +1100,5 @@ func newCache(de time.Duration, m map[string]Item) *cache {
 // the items in the cache never expire (by default), and must be deleted
 // manually.
 func New(defaultExpiration time.Duration) *Cache {
-	items := make(map[string]Item)
-	return &Cache{newCache(defaultExpiration, items)}
+	return &Cache{newCache(defaultExpiration)}
 }

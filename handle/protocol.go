@@ -2,9 +2,6 @@ package handle
 
 import (
 	"hash/adler32"
-	"sync"
-
-	"github.com/branthz/margin-cache/hashmap"
 )
 
 // for access request msg format--------------------------------------------------
@@ -30,40 +27,6 @@ const (
 	queryFail  = -3
 	KEYHASHMAX = 1024 * 8
 )
-
-type hmapST struct {
-	mp map[string]*hashmap.Cache
-	mu sync.RWMutex
-}
-
-var hcacher = newHmapst()
-
-func hmapRead(k string) (v *hashmap.Cache, ok bool) {
-	hcacher.mu.RLock()
-	v, ok = hcacher.mp[k]
-	hcacher.mu.RUnlock()
-	return
-}
-
-func hmapWrite(k string, v *hashmap.Cache) {
-	hcacher.mu.Lock()
-	hcacher.mp[k] = v
-	hcacher.mu.Unlock()
-	return
-}
-
-func hmapdel(k string) {
-	hcacher.mu.Lock()
-	delete(hcacher.mp, k)
-	hcacher.mu.Unlock()
-	return
-}
-
-func newHmapst() *hmapST {
-	st := new(hmapST)
-	st.mp = make(map[string]*hashmap.Cache)
-	return st
-}
 
 type FusionError string
 
