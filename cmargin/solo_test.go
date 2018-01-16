@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
-	//"time"
+	"time"
+
+	"github.com/branthz/margin-cache/common"
+	"github.com/branthz/margin-cache/handle"
 )
 
 var (
@@ -20,6 +23,8 @@ func init() {
 	//client.Addr = "192.168.206.110:6380"
 	client.Addr = "127.0.0.1:6380"
 	client.MaxPoolSize = 5
+	common.Init()
+	go handle.Start()
 }
 
 func Benchmark_Hget(b *testing.B) {
@@ -32,15 +37,16 @@ func Benchmark_Hget(b *testing.B) {
 		}
 	}
 }
-func TestMsg(t *testing.T){
-	b:=commandBytes("set","hello","world")
-	t.Logf("%q",string(b))
+func TestMsg(t *testing.T) {
+	b := commandBytes("set", "hello", "world")
+	t.Logf("%q", string(b))
 }
 func TestBasic(t *testing.T) {
 	var val []byte
 	var err error
 	//var value = `hello\r\naaaaaaaaaaaaaaa
 	//	bbbb`
+	time.Sleep(1e9 * 5)
 	var value [128]byte
 	for i := 0; i < 128; i++ {
 		if i%2 == 0 {
@@ -128,7 +134,7 @@ func hgetall(t *testing.T) {
 }
 
 func exists(t *testing.T) {
-	client.Hset("groupa","192.168.4.1",[]byte("alive"))
+	client.Hset("groupa", "192.168.4.1", []byte("alive"))
 	b, err := client.Hexists("groupa", "192.168.4.1")
 	if err != nil {
 		t.Error(err)

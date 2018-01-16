@@ -36,7 +36,6 @@ func Init() {
 	err := CFV.SetUp()
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(-1)
 	}
 	err = log.Setup("", CFV.loglevel)
 	if err != nil {
@@ -48,6 +47,7 @@ func Init() {
 func newConfig() {
 	CFV = new(AppOp)
 	CFV.loglevel = 4
+	CFV.Outport = 6380
 }
 
 // SetUp init config

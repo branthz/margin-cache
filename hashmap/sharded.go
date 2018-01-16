@@ -293,5 +293,8 @@ func DBSetup(defaultExpiration, cleanupInterval time.Duration) *Dbs {
 
 // GetDB returns the defaultDBs
 func GetDB() *Dbs {
-	return defaultDbs
+	if defaultDbs != nil {
+		return defaultDbs
+	}
+	return DBSetup(NoExpiration, DefaultCleanUpInterval)
 }

@@ -1,5 +1,6 @@
 # margin-cache
 
+[![GoDoc](https://godoc.org/github.com/branthz/margin-cache?status.svg)](https://godoc.org/github.com/branthz/margin-cache)
 ## Summary
 this is a hign-performance stand-alone redis-like cacher, it's based on C/S architecture.
 margin is a stateless , the data will lose when the progress restarted, so the client need to monitor the operational status of margin.

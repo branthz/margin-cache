@@ -23,13 +23,13 @@ import (
 )
 
 var (
-	// caches to store k/v
-	Caches   *hashmap.Dbs
-	// app's start time
+	// Caches to store k/v
+	Caches *hashmap.Dbs
+	//GstartTime saves app's start time
 	GstartTime = time.Now().Unix()
 )
 
-// get the default caches which has been initialised.
+//Init get the default caches which has been initialised.
 func Init() {
 	Caches = hashmap.GetDB()
 	if Caches == nil {
@@ -37,7 +37,7 @@ func Init() {
 	}
 }
 
-// tcp client 
+// tcp client
 type client struct {
 	conn    *net.TCPConn
 	wbuffer *bytes.Buffer
@@ -53,6 +53,7 @@ func newClient(pconn *net.TCPConn) *client {
 		le:      nil,
 	}
 }
+
 // release the client
 func (tc *client) Clear() {
 	tc.conn.Close()
@@ -61,8 +62,9 @@ func (tc *client) Clear() {
 	termList.Remove(tc.le)
 }
 
-// run a tcp server
+//Start run a tcp server
 func Start() {
+	Init()
 	tcpAddr := &net.TCPAddr{
 		Port: common.CFV.Outport,
 	}
@@ -325,7 +327,7 @@ func readResponse(tc *client) (res []byte, err error) {
 				return
 			}
 
-			var count int = 0
+			var count int
 			_, err = fmt.Fprintf(tc.wbuffer, "*%10d\r\n", count)
 			if err != nil {
 				return
@@ -393,9 +395,10 @@ func readTrequest(conn *net.TCPConn) {
 	return
 }
 
+//Read Wrapper conn.Read
 func Read(conn *net.TCPConn, data []byte) error {
 	var num, n int
-	var total int = len(data)
+	var total = len(data)
 	var err error
 
 	err = conn.SetReadDeadline(time.Now().Add(time.Second * 2))
@@ -416,9 +419,10 @@ func Read(conn *net.TCPConn, data []byte) error {
 	}
 }
 
+//Write wrapper conn.Write
 func Write(conn *net.TCPConn, data []byte) error {
-	var total int = len(data)
-	var num int = 0
+	var total = len(data)
+	var num int
 	var err error
 	var n int
 	err = conn.SetWriteDeadline(time.Now().Add(time.Second * 2))
