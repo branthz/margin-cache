@@ -1,3 +1,9 @@
+// Copyright 2017 The margin Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+// Read more about consistent hashing on wikipedia:  http://en.wikipedia.org/wiki/Consistent_hashing
+
+// Package cmargin implements a client for margin-cache
 package cmargin
 
 import (
@@ -19,6 +25,7 @@ const (
 
 var defaultAddr = "127.0.0.1:6380"
 
+// Client defines fields of client
 type Client struct {
 	Addr        string
 	Db          int
@@ -166,7 +173,7 @@ func (client *Client) openConnection() (c net.Conn, err error) {
 	if client.Addr != "" {
 		addr = client.Addr
 	}
-	c, err = net.DialTimeout("tcp", addr,5*1e9)
+	c, err = net.DialTimeout("tcp", addr, 5*1e9)
 	if err != nil {
 		return
 	}
@@ -351,6 +358,7 @@ func (client *Client) Exists(key string) (bool, error) {
 	return res.(int64) == 1, nil
 }
 
+// Del send the del key command
 func (client *Client) Del(key string) (bool, error) {
 	res, err := client.sendCommand("DEL", key)
 
@@ -361,6 +369,7 @@ func (client *Client) Del(key string) (bool, error) {
 	return res.(int64) == 1, nil
 }
 
+// Hdestroy del the hash key
 func (client *Client) Hdestroy(key string) error {
 	_, err := client.sendCommand("HDESTROY", key)
 
@@ -371,6 +380,7 @@ func (client *Client) Hdestroy(key string) error {
 	return nil
 }
 
+// Type checks the key's value type
 func (client *Client) Type(key string) (string, error) {
 	res, err := client.sendCommand("TYPE", key)
 
@@ -381,6 +391,7 @@ func (client *Client) Type(key string) (string, error) {
 	return res.(string), nil
 }
 
+// Ping checks the connection and get the server's startup time
 func (client *Client) Ping() (int64, error) {
 	res, err := client.sendCommand("PING")
 	if err != nil {
@@ -389,6 +400,7 @@ func (client *Client) Ping() (int64, error) {
 	return res.(int64), nil
 }
 
+// Keys get all the keys
 func (client *Client) Keys(pattern string) ([]string, error) {
 	res, err := client.sendCommand("KEYS", pattern)
 
@@ -444,6 +456,7 @@ func (client *Client) Dbsize() (int, error) {
 	return int(res.(int64)), nil
 }
 
+// Expire expire the key
 func (client *Client) Expire(key string, time int64) (bool, error) {
 	res, err := client.sendCommand("EXPIRE", key, strconv.FormatInt(time, 10))
 
@@ -489,6 +502,7 @@ func (client *Client) Flush(all bool) error {
 
 // String-related commands
 
+// Set set key/value
 func (client *Client) Set(key string, val []byte) error {
 	_, err := client.sendCommand("SET", key, string(val))
 
@@ -499,6 +513,7 @@ func (client *Client) Set(key string, val []byte) error {
 	return nil
 }
 
+// Get get a key's value
 func (client *Client) Get(key string) ([]byte, error) {
 	res, _ := client.sendCommand("GET", key)
 	if res == nil {
@@ -509,6 +524,7 @@ func (client *Client) Get(key string) ([]byte, error) {
 	return data, nil
 }
 
+// Getset get a key's value,if no exists set key/value
 func (client *Client) Getset(key string, val []byte) ([]byte, error) {
 	res, err := client.sendCommand("GETSET", key, string(val))
 
@@ -520,6 +536,7 @@ func (client *Client) Getset(key string, val []byte) ([]byte, error) {
 	return data, nil
 }
 
+//Mget get keys
 func (client *Client) Mget(keys ...string) ([][]byte, error) {
 	res, err := client.sendCommand("MGET", keys...)
 	if err != nil {
@@ -530,6 +547,7 @@ func (client *Client) Mget(keys ...string) ([][]byte, error) {
 	return data, nil
 }
 
+// Setnx set a key with expiration
 func (client *Client) Setnx(key string, val []byte) (bool, error) {
 	res, err := client.sendCommand("SETNX", key, string(val))
 
@@ -542,6 +560,7 @@ func (client *Client) Setnx(key string, val []byte) (bool, error) {
 	return false, marginError("Unexpected reply to SETNX")
 }
 
+// Setex set a key with expiration
 func (client *Client) Setex(key string, time int64, val []byte) error {
 	_, err := client.sendCommand("SETEX", key, strconv.FormatInt(time, 10), string(val))
 
@@ -552,6 +571,7 @@ func (client *Client) Setex(key string, time int64, val []byte) error {
 	return nil
 }
 
+//Mset set keys
 func (client *Client) Mset(mapping map[string][]byte) error {
 	args := make([]string, len(mapping)*2)
 	i := 0
@@ -567,6 +587,7 @@ func (client *Client) Mset(mapping map[string][]byte) error {
 	return nil
 }
 
+//Msetnx set keys with expiration
 func (client *Client) Msetnx(mapping map[string][]byte) (bool, error) {
 	args := make([]string, len(mapping)*2)
 	i := 0
@@ -585,6 +606,7 @@ func (client *Client) Msetnx(mapping map[string][]byte) (bool, error) {
 	return false, marginError("Unexpected reply to MSETNX")
 }
 
+// Incr increment the key's value with 1
 func (client *Client) Incr(key string) (int64, error) {
 	res, err := client.sendCommand("INCR", key)
 	if err != nil {
@@ -594,6 +616,7 @@ func (client *Client) Incr(key string) (int64, error) {
 	return res.(int64), nil
 }
 
+// Incrby increment the key's value with num
 func (client *Client) Incrby(key string, val int64) (int64, error) {
 	res, err := client.sendCommand("INCRBY", key, strconv.FormatInt(val, 10))
 	if err != nil {
