@@ -40,7 +40,8 @@ func (m httpHostMatch) match(br *bufio.Reader) Target {
 	return nil
 }
 
-func getTcpKey(br *bufio.Reader) string {
+// return the key target in this msg
+func tcpKey(br *bufio.Reader) string {
 	const maxPeek = 4 << 10
 	peekSize := 1
 	b, _ := br.Peek(peekSize)
@@ -56,14 +57,12 @@ func getTcpKey(br *bufio.Reader) string {
 		fin := 1+bytes.IndexByte(b, '$')
 		sin := 1+fin+ bytes.IndexByte(b[fin:], '$')
 		tin := sin+bytes.IndexByte(b[sin:], '\r')
-		//log.Println("%q",string(b[sin:tin]))
 		keylen, err := strconv.Atoi(string(b[sin: tin]))
 		if err != nil {
 			return ""
 		}
 		return string(b[tin+2 : tin+2+keylen])
 	}
-
 	return ""
 }
 

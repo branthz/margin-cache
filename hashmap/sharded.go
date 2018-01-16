@@ -11,15 +11,13 @@ import (
 	"fmt"
 )
 
-// Dbs :This is an experimental and unexported (for now) attempt at making a cache
-// with better algorithmic complexity than the standard one, namely by
+// Dbs :This is multiple cashes, namely by
 // preventing write locks of the entire cache when an item is added. As of the
 // time of writing, the overhead of selecting buckets results in cache
 // operations being about twice as slow as for the standard cache with small
 // total cache sizes, and faster for larger ones.
 //
 // See cache_test.go for a few benchmarks.
-// exported?
 type Dbs struct {
 	*shardedCache
 }
@@ -27,7 +25,7 @@ const (
 	//DefaultCleanUpInterval clean the cache expied items
 	DefaultCleanUpInterval time.Duration = 60 * 1e9
 )
-var(
+var (
 	defaultDbs *Dbs
 )
 type shardedCache struct {
@@ -284,3 +282,8 @@ func DBSetup(defaultExpiration, cleanupInterval time.Duration) *Dbs {
 	//}
 	return defaultDbs
 }
+
+func GetDB() *Dbs{
+	return defaultDbs
+}
+

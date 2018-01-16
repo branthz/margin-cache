@@ -1,6 +1,14 @@
 PROGS = marginCache
+BUILD_VERBOSE := -v
+
+TEST_VERBOSE := -v
+
 all: $(PROGS)
-$(PROGS):*.go
-	go build -ldflags -o marginCache "-w -s" *.go
+
+.PHONY: $(PROGS) 
+$(PROGS): main.go
+	go build -o $(PROGS) -ldflags "-w -s" 
+
 clean:
+	go clean
 	rm -rf $(PROGS)

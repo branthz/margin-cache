@@ -1,8 +1,11 @@
-//timer manage
+// Copyright 2017 The margin Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
+// timer manage for expired keys
 package hashmap
 
 import (
-	"fmt"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -47,7 +50,6 @@ func goready(n int) {
 }
 
 func gopark() {
-	fmt.Println("==========go park")
 	<-timers.waitc
 }
 

@@ -91,13 +91,9 @@ func (p *Proxy) addRoute(r route) {
 	cfg.routes = append(cfg.routes, r)
 }
 
-// AddRoute appends an always-matching route to the ipPort listener,
-// directing any connection to dest.
-//
 // This is generally used as either the only rule (for simple TCP
-// proxies), or as the final fallback rule for an ipPort.
+// proxies based on consistent hash), or as the final fallback rule .
 //
-// The ipPort is any valid net.Listen TCP address.
 func (p *Proxy) AddRoute(dest string) {
 	p.configFor().addRoute (dest,To(dest))
 	//p.addRoute(fixedTarget{To(dest)})
@@ -137,8 +133,8 @@ func (p *Proxy) Close() error {
 	return nil
 }
 
-// Start creates a TCP listener for each unique ipPort from the
-// previously created routes and starts the proxy. It returns any
+// Start creates a TCP listener 
+// and starts the proxy. It returns any
 // error from starting listeners.
 //
 // If it returns a non-nil error, any successfully opened listeners

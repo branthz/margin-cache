@@ -1,3 +1,7 @@
+// Copyright 2017 The margin Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package main
 
 import (
@@ -9,19 +13,7 @@ import (
 
 func main() {
 	common.Init()
-	log.Info("commonCache start")
-	dbs := hashmap.DBSetup(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-
-	//for i := 0; i < KEYHASHMAX; i++ {
-	//	CacheSet[i] = hashmap.New(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-	//}
-
-	//gcacher = hashmap.New(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-	//fd, _ := os.Create("./aaa.pprof")
-	//pprof.StartCPUProfile(fd)
-	//pprof.WriteHeapProfile(fd)
-	handle.TListen(dbs)
-	//time.Sleep(time.Second * 120)
-	//pprof.StopCPUProfile()
-	//fd.Close()
+	log.Info("marginCache start...")
+	hashmap.DBSetup(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
+	handle.Start()
 }

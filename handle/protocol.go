@@ -1,10 +1,14 @@
+// Copyright 2017 The margin Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package handle
 
 import (
 	"hash/adler32"
 )
 
-// for access request msg format--------------------------------------------------
+// for access request msg format
 const (
 	ADD_STRING = iota + 1
 	ADD_STRING_RES
