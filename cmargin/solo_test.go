@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
-	"time"
 
 	"github.com/branthz/margin-cache/common"
 	"github.com/branthz/margin-cache/handle"
@@ -46,7 +45,6 @@ func TestBasic(t *testing.T) {
 	var err error
 	//var value = `hello\r\naaaaaaaaaaaaaaa
 	//	bbbb`
-	time.Sleep(1e9 * 5)
 	var value [128]byte
 	for i := 0; i < 128; i++ {
 		if i%2 == 0 {
