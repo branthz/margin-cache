@@ -1,14 +1,19 @@
+// Copyright 2017 The margin Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
+// Package hashmap provides an key/value store.
 package hashmap
 
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"math"
 	"math/big"
 	insecurerand "math/rand"
 	"os"
 	"time"
-	"fmt"
 )
 
 // Dbs :This is multiple cashes, namely by
@@ -21,13 +26,16 @@ import (
 type Dbs struct {
 	*shardedCache
 }
+
 const (
 	//DefaultCleanUpInterval clean the cache expied items
 	DefaultCleanUpInterval time.Duration = 60 * 1e9
 )
+
 var (
 	defaultDbs *Dbs
 )
+
 type shardedCache struct {
 	seed    uint32
 	m       uint32
@@ -130,59 +138,59 @@ func (sc *shardedCache) DeleteExpired() {
 	}
 }
 
-func (sc *shardedCache)Hget(k,f string) (interface{},error){
-	return sc.h.hget(k,f)
+func (sc *shardedCache) Hget(k, f string) (interface{}, error) {
+	return sc.h.hget(k, f)
 }
 
-func (sc *shardedCache)Hset(k,f string,x interface{},d time.Duration) {
-	sc.h.hset(k,f,x,d)
+func (sc *shardedCache) Hset(k, f string, x interface{}, d time.Duration) {
+	sc.h.hset(k, f, x, d)
 	return
 }
 
-func (sc *shardedCache)Hexist(k,f string) bool{
-	return sc.h.hexist(k,f)  
+func (sc *shardedCache) Hexist(k, f string) bool {
+	return sc.h.hexist(k, f)
 }
 
-func (sc *shardedCache)Hdel(k,f string) {
-	sc.h.hdel(k,f)  
+func (sc *shardedCache) Hdel(k, f string) {
+	sc.h.hdel(k, f)
 	return
 }
 
-func (sc *shardedCache) Hmset(k string,pairs [][]byte) {
-	for i:=0;i<len(pairs);i=i+2{
-		sc.h.hset(k,string(pairs[i]),pairs[i+1],NoExpiration)
+func (sc *shardedCache) Hmset(k string, pairs [][]byte) {
+	for i := 0; i < len(pairs); i = i + 2 {
+		sc.h.hset(k, string(pairs[i]), pairs[i+1], NoExpiration)
 	}
 }
 
-func (sc *shardedCache)Hdestroy(k string) {
-	sc.h.hdes(k)	
+func (sc *shardedCache) Hdestroy(k string) {
+	sc.h.hdes(k)
 	return
 }
 
-func (sc *shardedCache) Hmget(k string,pairs [][]byte) (data [][]byte,err error) {
-	c,found:=sc.h.get(k)	
-	if !found{
-		err=fmt.Errorf("no find the key:%s",k)
-		return 		
+func (sc *shardedCache) Hmget(k string, pairs [][]byte) (data [][]byte, err error) {
+	c, found := sc.h.get(k)
+	if !found {
+		err = fmt.Errorf("no find the key:%s", k)
+		return
 	}
-	
-	for i:=0;i<len(pairs);i++{
-		v,found:=c.Get(string(pairs[i]))
-		if !found{
-			err=fmt.Errorf("no find the field:%s",string(pairs[i]))
-			return 
+
+	for i := 0; i < len(pairs); i++ {
+		v, found := c.Get(string(pairs[i]))
+		if !found {
+			err = fmt.Errorf("no find the field:%s", string(pairs[i]))
+			return
 		}
-		data=append(data,v.([]byte))
+		data = append(data, v.([]byte))
 	}
-	return 
+	return
 }
 
-func (sc *shardedCache)Hgetall(k string,buf *bytes.Buffer)error{
-	c,ok:=sc.h.get(k)
-	if !ok{
-		return fmt.Errorf("no find key:%s",k)
+func (sc *shardedCache) Hgetall(k string, buf *bytes.Buffer) error {
+	c, ok := sc.h.get(k)
+	if !ok {
+		return fmt.Errorf("no find key:%s", k)
 	}
-	err:=c.Getall(buf)	
+	err := c.Getall(buf)
 	return err
 }
 
@@ -245,18 +253,18 @@ func newShardedCache(n int, de time.Duration) *shardedCache {
 	} else {
 		seed = uint32(rnd.Uint64())
 	}
-	hc:=newHcache()
+	hc := newHcache()
 	sc := &shardedCache{
 		seed: seed,
 		m:    uint32(n),
 		cs:   make([]*cache, n),
-		h:hc,
+		h:    hc,
 	}
 	for i := 0; i < n; i++ {
 		c := &cache{
 			defaultExpiration: de,
 			items:             map[string]Item{},
-			id:uint32(i),
+			id:                uint32(i),
 		}
 		sc.cs[i] = c
 	}
@@ -268,14 +276,14 @@ const Maxbuckets = 30
 
 //DBSetup init dbs
 func DBSetup(defaultExpiration, cleanupInterval time.Duration) *Dbs {
-	if defaultDbs!=nil{
-			return defaultDbs
+	if defaultDbs != nil {
+		return defaultDbs
 	}
 	if defaultExpiration == 0 {
 		defaultExpiration = -1
 	}
 	sc := newShardedCache(Maxbuckets, defaultExpiration)
-	defaultDbs= &Dbs{sc}
+	defaultDbs = &Dbs{sc}
 	//if cleanupInterval > 0 {
 	//	runShardedJanitor(sc, cleanupInterval)
 	//	runtime.SetFinalizer(defaultDbs, stopShardedJanitor)
@@ -283,7 +291,7 @@ func DBSetup(defaultExpiration, cleanupInterval time.Duration) *Dbs {
 	return defaultDbs
 }
 
-func GetDB() *Dbs{
+// GetDB returns the defaultDBs
+func GetDB() *Dbs {
 	return defaultDbs
 }
-

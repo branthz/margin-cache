@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
+// Package proxy provides an tcp proxy applied with consistent routers to backends
 package proxy
 
 import (
@@ -22,11 +23,11 @@ import (
 // registered.
 type Proxy struct {
 	// ip:port => config
-	configs *config
+	configs   *config
 	LocalHost string
-	lns   net.Listener
-	donec chan struct{} // closed before err
-	err   error         // any error from listening
+	lns       net.Listener
+	donec     chan struct{} // closed before err
+	err       error         // any error from listening
 
 	// ListenFunc optionally specifies an alternate listen
 	// function. If nil, net.Dial is used.
@@ -34,7 +35,7 @@ type Proxy struct {
 	ListenFunc func(net, laddr string) (net.Listener, error)
 }
 
-// // Matcher reports whether hostname matches the Matcher's criteria.
+// Matcher reports whether hostname matches the Matcher's criteria.
 type Matcher func(ctx context.Context, hostname string) bool
 
 // equals is a trivial Matcher that implements string equality.
@@ -46,20 +47,21 @@ func equals(want string) Matcher {
 
 // config contains the proxying state for one listener.
 type config struct {
-	routes    []route
-	consis   *Consistent
-	mroute  route
+	routes []route
+	consis *Consistent
+	mroute route
 }
 
-func(c *config)match(b *bufio.Reader)Target{
+func (c *config) match(b *bufio.Reader) Target {
 	key := "hello"
-	t,_:=c.consis.GetTarget(key)
-	return t 
+	t, _ := c.consis.GetTarget(key)
+	return t
 }
 
-func (c *config)addRoute(dst string,tar Target){
-	c.consis.Add(dst,tar)
+func (c *config) addRoute(dst string, tar Target) {
+	c.consis.Add(dst, tar)
 }
+
 // A route matches a connection to a target.
 type route interface {
 	// match examines the initial bytes of a connection, looking for a
@@ -81,7 +83,7 @@ func (p *Proxy) netListen() func(net, laddr string) (net.Listener, error) {
 
 func (p *Proxy) configFor() *config {
 	if p.configs == nil {
-		p.configs = &config{consis:New()}
+		p.configs = &config{consis: New()}
 	}
 	return p.configs
 }
@@ -91,11 +93,10 @@ func (p *Proxy) addRoute(r route) {
 	cfg.routes = append(cfg.routes, r)
 }
 
-// This is generally used as either the only rule (for simple TCP
-// proxies based on consistent hash), or as the final fallback rule .
+// AddRoute is generally used as either the only rule (for simple TCP proxies based on consistent hash)
 //
 func (p *Proxy) AddRoute(dest string) {
-	p.configFor().addRoute (dest,To(dest))
+	p.configFor().addRoute(dest, To(dest))
 	//p.addRoute(fixedTarget{To(dest)})
 }
 
@@ -103,8 +104,8 @@ type fixedTarget struct {
 	t Target
 }
 
-func (m fixedTarget) match(*bufio.Reader) Target { 
-	return m.t 
+func (m fixedTarget) match(*bufio.Reader) Target {
+	return m.t
 }
 
 // Run is calls Start, and then Wait.
@@ -133,7 +134,7 @@ func (p *Proxy) Close() error {
 	return nil
 }
 
-// Start creates a TCP listener 
+// Start creates a TCP listener
 // and starts the proxy. It returns any
 // error from starting listeners.
 //
@@ -177,17 +178,17 @@ func (p *Proxy) serveListener(ret chan<- error, ln net.Listener, route *config) 
 func (p *Proxy) serveConn(c net.Conn, route *config) bool {
 	br := bufio.NewReader(c)
 
-		if target := route.match(br); target != nil {
-			if n := br.Buffered(); n > 0 {
-				peeked, _ := br.Peek(br.Buffered())
-				c = &Conn{
-					Peeked: peeked,
-					Conn:   c,
-				}
+	if target := route.match(br); target != nil {
+		if n := br.Buffered(); n > 0 {
+			peeked, _ := br.Peek(br.Buffered())
+			c = &Conn{
+				Peeked: peeked,
+				Conn:   c,
 			}
-			target.HandleConn(c)
-			return true
 		}
+		target.HandleConn(c)
+		return true
+	}
 	// TODO: hook for this?
 	log.Printf("tcpproxy: no routes matched conn %v/%v; closing", c.RemoteAddr().String(), c.LocalAddr().String())
 	c.Close()

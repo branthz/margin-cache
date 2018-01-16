@@ -1,3 +1,8 @@
+// Copyright 2017 The margin Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
+// Package hashmap provides an key/value store.
 package hashmap
 
 import (
@@ -44,7 +49,7 @@ type cache struct {
 	items             map[string]Item
 	mu                sync.RWMutex
 	onEvicted         func(string, interface{})
-	id  uint32
+	id                uint32
 }
 
 // Add an item to the cache, replacing any existing item. If the duration is 0
@@ -58,7 +63,7 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 	}
 	if d > 0 {
 		e = time.Now().Add(d).UnixNano()
-		addtimer(newtimer(e,c,k))	
+		addtimer(newtimer(e, c, k))
 	}
 	c.mu.Lock()
 	c.items[k] = Item{
@@ -918,14 +923,13 @@ func (c *cache) DecrementFloat64(k string, n float64) (float64, error) {
 	return nv, nil
 }
 
-
-func newtimer(d int64,c *cache,k string) *timer{
-	return &timer{when:d,key:k,f:timerAction,arg:c}
+func newtimer(d int64, c *cache, k string) *timer {
+	return &timer{when: d, key: k, f: timerAction, arg: c}
 }
 
 func timerAction(a interface{}, b string) {
 	a.(*cache).Delete(b)
-	//defaultDbs.cs[b].Delete(a.(string))	
+	//defaultDbs.cs[b].Delete(a.(string))
 }
 
 // Delete an item from the cache. Does nothing if the key is not in the cache.

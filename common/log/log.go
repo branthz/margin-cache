@@ -1,3 +1,8 @@
+// Copyright 2017 The margin Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
+// Package log provides logging interfaces.
 package log
 
 import (
@@ -7,8 +12,8 @@ import (
 	"runtime"
 )
 
+// Log Level
 const (
-	// Log Level
 	FATAL = 0
 	ERROR = 1
 	WARN  = 2
@@ -16,12 +21,10 @@ const (
 	DEBUG = 4
 )
 
-/*
-   A Logger represents an active logging object that generates lines of output
-   to an io.Writer. Each logging operation makes a single call to the
-   Writer's Write method. A Logger can be used simultaneously from multiple
-   goroutines; it guarantees to serialize access to the Writer.
-*/
+// Logger represents an active logging object that generates lines of output to an io.Writer.
+//Each logging operation makes a single call to theWriter's Write method.
+//A Logger can be used simultaneously from multiple goroutines
+//it guarantees to serialize access to the Writer.
 type Logger struct {
 	log   *log.Logger
 	file  *os.File
@@ -36,18 +39,17 @@ var (
 	selfHold        *Logger
 )
 
-/*
-   Setup creates a new Logger and hold it in this package. The out variable sets the destination to
-   which log data will be written. The prefix appears at the beginning of
-   each generated log line. The file argument defines the write log file path.
-   if any error the os.Stdout will return
-*/
-
+// Setup creates a new Logger and hold it in this package.
+// The out variable sets the destination to which log data will be written.
+// The prefix appears at the beginning of each generated log line.
+// The file argument defines the write log file path.
+// if any error the os.Stdout will return
 func Setup(file string, level int) (err error) {
 	selfHold, err = New(file, level)
 	return
 }
 
+// New returns an Logger
 func New(file string, levelIn int) (*Logger, error) {
 	level := defaultLogLevel
 	for _, v := range errLevels {
@@ -80,6 +82,8 @@ func Error(format string, args ...interface{}) {
 		selfHold.logCore(ERROR, format, args...)
 	}
 }
+
+// Errorln like Error but ignore format
 func Errorln(args ...interface{}) {
 	if selfHold.level >= ERROR {
 		selfHold.logCore(ERROR, "", args...)
@@ -92,6 +96,8 @@ func Debug(format string, args ...interface{}) {
 		selfHold.logCore(DEBUG, format, args...)
 	}
 }
+
+// Debugln like Debug but ignore format
 func Debugln(args ...interface{}) {
 	if selfHold.level >= DEBUG {
 		selfHold.logCore(DEBUG, "", args...)
@@ -104,6 +110,8 @@ func Info(format string, args ...interface{}) {
 		selfHold.logCore(INFO, format, args...)
 	}
 }
+
+// Infoln like info bug ignore format
 func Infoln(args ...interface{}) {
 	if selfHold.level >= INFO {
 		selfHold.logCore(INFO, "", args...)
@@ -116,6 +124,8 @@ func Warn(format string, args ...interface{}) {
 		selfHold.logCore(WARN, format, args...)
 	}
 }
+
+// Warnln like Warn but ignore format
 func Warnln(args ...interface{}) {
 	if selfHold.level >= WARN {
 		selfHold.logCore(WARN, "", args...)
@@ -128,6 +138,8 @@ func Fatal(format string, args ...interface{}) {
 		selfHold.logCore(FATAL, format, args...)
 	}
 }
+
+// Fatalln like fatal bug ignore format
 func Fatalln(args ...interface{}) {
 	if selfHold.level >= FATAL {
 		selfHold.logCore(FATAL, "", args...)
