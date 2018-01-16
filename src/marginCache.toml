@@ -1,4 +1,0 @@
-[marginCache]
-tcpListenPort=6380
-# 0:Debug,1:Warn,2:Info,3:Warn,4:Error,5:Fatal
-logLevel= 4

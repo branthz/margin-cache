@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"sync"
 	"time"
 )
 
+//Item store object
 type Item struct {
 	Object     interface{}
 	Expiration int64
 }
 
-// Returns true if the item has expired.
+//Expired Returns true if the item has expired.
 func (item Item) Expired() bool {
 	if item.Expiration == 0 {
 		return false
@@ -25,15 +25,15 @@ func (item Item) Expired() bool {
 }
 
 const (
-	// For use with functions that take an expiration time.
+	//NoExpiration  :For use with functions that take an expiration time.
 	NoExpiration time.Duration = -1
-	// For use with functions that take an expiration time. Equivalent to
-	// passing in the same expiration duration as was given to New() or
-	// NewFrom() when the cache was created (e.g. 5 minutes.)
-	DefaultExpiration      time.Duration = 0
-	DefaultCleanUpInterval time.Duration = 60 * 1e9
+	// DefaultExpiration  For use with functions that take an expiration time. Equivalent to
+	// passing in the same expiration duration as was given to New()
+	// when the cache was created (e.g. 5 minutes.)
+	DefaultExpiration time.Duration = 0
 )
 
+//Cache to be exposed
 type Cache struct {
 	*cache
 	// If this is confusing, see the comment at the bottom of New()
@@ -44,7 +44,7 @@ type cache struct {
 	items             map[string]Item
 	mu                sync.RWMutex
 	onEvicted         func(string, interface{})
-	janitor           *janitor
+	id  uint32
 }
 
 // Add an item to the cache, replacing any existing item. If the duration is 0
@@ -58,6 +58,7 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 	}
 	if d > 0 {
 		e = time.Now().Add(d).UnixNano()
+		addtimer(newtimer(e,c,k))	
 	}
 	c.mu.Lock()
 	c.items[k] = Item{
@@ -133,12 +134,12 @@ func (c *cache) Get(k string) (interface{}, bool) {
 
 func (c *cache) Getallkey(buff *bytes.Buffer) (int, error) {
 	var err error
-	var count int = 0
+	var count int
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	count = len(c.items)
-	for k, _ := range c.items {
+	for k := range c.items {
 		//vb := v.Object.([]byte)
 		_, err = fmt.Fprintf(buff, "$%d\r\n%s\r\n", len(k), k)
 		if err != nil {
@@ -150,7 +151,7 @@ func (c *cache) Getallkey(buff *bytes.Buffer) (int, error) {
 
 func (c *cache) Getall(buff *bytes.Buffer) error {
 	var err error
-	var count int = 0
+	var count int
 
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -917,6 +918,16 @@ func (c *cache) DecrementFloat64(k string, n float64) (float64, error) {
 	return nv, nil
 }
 
+
+func newtimer(d int64,c *cache,k string) *timer{
+	return &timer{when:d,key:k,f:timerAction,arg:c}
+}
+
+func timerAction(a interface{}, b string) {
+	a.(*cache).Delete(b)
+	//defaultDbs.cs[b].Delete(a.(string))	
+}
+
 // Delete an item from the cache. Does nothing if the key is not in the cache.
 func (c *cache) Delete(k string) {
 	c.mu.Lock()
@@ -974,8 +985,7 @@ func (c *cache) OnEvicted(f func(string, interface{})) {
 
 // Write the cache's items (using Gob) to an io.Writer.
 //
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
+// NOTE: This method is deprecated in favor of c.Items()
 func (c *cache) Save(w io.Writer) (err error) {
 	enc := gob.NewEncoder(w)
 	defer func() {
@@ -995,8 +1005,7 @@ func (c *cache) Save(w io.Writer) (err error) {
 // Save the cache's items to the given filename, creating the file if it
 // doesn't exist, and overwriting it if it does.
 //
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
+// NOTE: This method is deprecated in favor of c.Items()
 func (c *cache) SaveFile(fname string) error {
 	fp, err := os.Create(fname)
 	if err != nil {
@@ -1013,8 +1022,7 @@ func (c *cache) SaveFile(fname string) error {
 // Add (Gob-serialized) cache items from an io.Reader, excluding any items with
 // keys that already exist (and haven't expired) in the current cache.
 //
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
+// NOTE: This method is deprecated in favor of c.Items()
 func (c *cache) Load(r io.Reader) error {
 	dec := gob.NewDecoder(r)
 	items := map[string]Item{}
@@ -1035,8 +1043,7 @@ func (c *cache) Load(r io.Reader) error {
 // Load and add cache items from the given filename, excluding any items with
 // keys that already exist in the current cache.
 //
-// NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
-// documentation for NewFrom().)
+// NOTE: This method is deprecated in favor of c.Items()
 func (c *cache) LoadFile(fname string) error {
 	fp, err := os.Open(fname)
 	if err != nil {
@@ -1077,94 +1084,21 @@ func (c *cache) Flush() {
 	c.mu.Unlock()
 }
 
-type janitor struct {
-	Interval time.Duration
-	stop     chan bool
-}
-
-func (j *janitor) Run(c *cache) {
-	j.stop = make(chan bool)
-	ticker := time.NewTicker(j.Interval)
-	for {
-		select {
-		case <-ticker.C:
-			c.DeleteExpired()
-		case <-j.stop:
-			ticker.Stop()
-			return
-		}
-	}
-}
-
-func stopJanitor(c *Cache) {
-	c.janitor.stop <- true
-}
-
-func runJanitor(c *cache, ci time.Duration) {
-	j := &janitor{
-		Interval: ci,
-	}
-	c.janitor = j
-	go j.Run(c)
-}
-
-func newCache(de time.Duration, m map[string]Item) *cache {
+func newCache(de time.Duration) *cache {
 	if de == 0 {
 		de = -1
 	}
 	c := &cache{
 		defaultExpiration: de,
-		items:             m,
+		items:             make(map[string]Item),
 	}
 	return c
 }
 
-func newCacheWithJanitor(de time.Duration, ci time.Duration, m map[string]Item) *Cache {
-	c := newCache(de, m)
-	// This trick ensures that the janitor goroutine (which--granted it
-	// was enabled--is running DeleteExpired on c forever) does not keep
-	// the returned C object from being garbage collected. When it is
-	// garbage collected, the finalizer stops the janitor goroutine, after
-	// which c can be collected.
-	C := &Cache{c}
-	if ci > 0 {
-		runJanitor(c, ci)
-		runtime.SetFinalizer(C, stopJanitor)
-	}
-	return C
-}
-
-// Return a new cache with a given default expiration duration and cleanup
-// interval. If the expiration duration is less than one (or NoExpiration),
+// New :Return a new cache with a given default expiration duration
+// If the expiration duration is less than one (or NoExpiration),
 // the items in the cache never expire (by default), and must be deleted
-// manually. If the cleanup interval is less than one, expired items are not
-// deleted from the cache before calling c.DeleteExpired().
-func New(defaultExpiration, cleanupInterval time.Duration) *Cache {
-	items := make(map[string]Item)
-	return newCacheWithJanitor(defaultExpiration, cleanupInterval, items)
-}
-
-// Return a new cache with a given default expiration duration and cleanup
-// interval. If the expiration duration is less than one (or NoExpiration),
-// the items in the cache never expire (by default), and must be deleted
-// manually. If the cleanup interval is less than one, expired items are not
-// deleted from the cache before calling c.DeleteExpired().
-//
-// NewFrom() also accepts an items map which will serve as the underlying map
-// for the cache. This is useful for starting from a deserialized cache
-// (serialized using e.g. gob.Encode() on c.Items()), or passing in e.g.
-// make(map[string]Item, 500) to improve startup performance when the cache
-// is expected to reach a certain minimum size.
-//
-// Only the cache's methods synchronize access to this map, so it is not
-// recommended to keep any references to the map around after creating a cache.
-// If need be, the map can be accessed at a later point using c.Items() (subject
-// to the same caveat.)
-//
-// Note regarding serialization: When using e.g. gob, make sure to
-// gob.Register() the individual types stored in the cache before encoding a
-// map retrieved with c.Items(), and to register those same types before
-// decoding a blob containing an items map.
-func NewFrom(defaultExpiration, cleanupInterval time.Duration, items map[string]Item) *Cache {
-	return newCacheWithJanitor(defaultExpiration, cleanupInterval, items)
+// manually.
+func New(defaultExpiration time.Duration) *Cache {
+	return &Cache{newCache(defaultExpiration)}
 }

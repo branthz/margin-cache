@@ -1,4 +1,8 @@
-package main
+// Copyright 2017 The margin Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
+package handle
 
 import (
 	"bufio"
@@ -8,12 +12,26 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
-	"os"
-	"github.com/margin-cache/hashmap"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/branthz/margin-cache/common"
+	"github.com/branthz/margin-cache/common/log"
+	"github.com/branthz/margin-cache/hashmap"
 )
+
+var (
+	Caches   *hashmap.Dbs
+	GstartTime = time.Now().Unix()
+)
+
+func Init() {
+	Caches = hashmap.GetDB()
+	if Caches == nil {
+		panic("cashes no initialized!")
+	}
+}
 
 type tclient struct {
 	conn    *net.TCPConn
@@ -38,21 +56,21 @@ func (tc *tclient) Clear() {
 	termList.Remove(tc.le)
 }
 
-func tListenRequest() {
+// run a tcp server
+func Start() {
 	tcpAddr := &net.TCPAddr{
-		Port: CFV.outPort,
+		Port: common.CFV.Outport,
 	}
 	tcpConn, err := net.ListenTCP("tcp4", tcpAddr)
 	if err != nil {
-		mlog.Error("%v", err)
-		os.Exit(-1)
+		log.Error("%v", err)
+		panic(err)
 	}
 	defer tcpConn.Close()
-
 	for {
 		conn, err := tcpConn.AcceptTCP()
 		if err != nil {
-			mlog.Error("Accept failed:%v", err)
+			log.Error("Accept failed:%v", err)
 			continue
 		}
 		go readTrequest(conn) //long tcp connection
@@ -103,7 +121,7 @@ func readResponse(tc *tclient) (res []byte, err error) {
 	for {
 		line, err = tc.rder.ReadString('\n')
 		if len(line) == 0 || err != nil {
-			mlog.Info("%v", err)
+			log.Info("%v", err)
 			return
 		}
 		line = strings.TrimSpace(line)
@@ -122,7 +140,7 @@ func readResponse(tc *tclient) (res []byte, err error) {
 			err = fmt.Errorf("cmd size less than 0")
 			return
 		}
-		//mlog.Debug("request parameters:")
+		log.Debug("request parameters:")
 		req := make([][]byte, size)
 		for i := 0; i < size; i++ {
 			req[i], err = readBulk(tc.rder, "")
@@ -132,13 +150,12 @@ func readResponse(tc *tclient) (res []byte, err error) {
 			if err != nil {
 				return
 			}
-			//fmt.Printf("%s-----\n", string(req[i]))
+			fmt.Printf("%s-----\n", string(req[i]))
 			// dont read end of line as might not have been bulk
 		}
-		//fmt.Printf("\n")
+		fmt.Printf("\n")
 		tc.wbuffer.Reset()
 
-		var hs int
 		switch string(req[0]) {
 		case "PING":
 			//res = fmt.Sprintf(":%d\r\n", GstartTime)
@@ -146,8 +163,7 @@ func readResponse(tc *tclient) (res []byte, err error) {
 
 		case "DECR":
 			var v int64
-			hs = SessionHash(req[1])
-			v, err = CacheSet[hs].DecrementInt64(string(req[1]), 1)
+			v, err = Caches.DecrementInt64(string(req[1]), 1)
 			if err != nil {
 				return
 			}
@@ -160,8 +176,7 @@ func readResponse(tc *tclient) (res []byte, err error) {
 				err = fmt.Errorf("decrby expected a integer")
 				return
 			}
-			hs = SessionHash(req[1])
-			v, err = CacheSet[hs].IncrementInt64(string(req[1]), v)
+			v, err = Caches.IncrementInt64(string(req[1]), v)
 			if err != nil {
 				return
 			}
@@ -175,8 +190,7 @@ func readResponse(tc *tclient) (res []byte, err error) {
 				err = fmt.Errorf("decrby expected a integer")
 				return
 			}
-			hs = SessionHash(req[1])
-			v, err = CacheSet[hs].IncrementInt64(string(req[1]), v)
+			v, err = Caches.IncrementInt64(string(req[1]), v)
 			if err != nil {
 				return
 			}
@@ -185,8 +199,8 @@ func readResponse(tc *tclient) (res []byte, err error) {
 
 		case "INCR":
 			var v int64
-			hs = SessionHash(req[1])
-			v, err = CacheSet[hs].IncrementInt64(string(req[1]), 1)
+
+			v, err = Caches.IncrementInt64(string(req[1]), 1)
 			if err != nil {
 				return
 			}
@@ -194,14 +208,12 @@ func readResponse(tc *tclient) (res []byte, err error) {
 			fmt.Fprintf(tc.wbuffer, ":%d\r\n", v)
 
 		case "SET":
-			hs = SessionHash(req[1])
-			CacheSet[hs].Set(string(req[1]), string(req[2]), hashmap.NoExpiration)
+			Caches.Set(string(req[1]), string(req[2]), hashmap.NoExpiration)
 			//res = fmt.Sprintf("+\r\nok")
 			tc.wbuffer.WriteString(":1\r\n")
 
 		case "GET":
-			hs = SessionHash(req[1])
-			v, ok := CacheSet[hs].Get(string(req[1]))
+			v, ok := Caches.Get(string(req[1]))
 			if !ok {
 				err = fmt.Errorf("not find the key:%s", string(req[1]))
 				return
@@ -211,8 +223,7 @@ func readResponse(tc *tclient) (res []byte, err error) {
 			fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(vs), vs)
 
 		case "DEL":
-			hs = SessionHash(req[1])
-			CacheSet[hs].Delete(string(req[1]))
+			Caches.Delete(string(req[1]))
 			tc.wbuffer.WriteString(":1\r\n")
 
 		case "SETEX":
@@ -225,109 +236,27 @@ func readResponse(tc *tclient) (res []byte, err error) {
 				err = fmt.Errorf("setex expected a time expiration")
 				return
 			}
-			hs = SessionHash(req[1])
-			CacheSet[hs].Set(string(req[1]), string(req[3]), time.Duration(expi*1e9))
+			Caches.Set(string(req[1]), string(req[3]), time.Duration(expi*1e9))
 			//res = fmt.Sprintf("+\r\nok")
 			tc.wbuffer.WriteString("+\r\nok")
 
 		case "EXISTS":
-			hs = SessionHash(req[1])
-			_, ok := CacheSet[hs].Get(string(req[1]))
+			_, ok := Caches.Get(string(req[1]))
 			if !ok {
-				//res = fmt.Sprintf(":0\r\n")
 				tc.wbuffer.WriteString(":0\r\n")
 			} else {
-				//res = fmt.Sprintf(":1\r\n")
 				tc.wbuffer.WriteString(":1\r\n")
 			}
 		case "HEXISTS":
-
-			v, ok := hmapRead(string(req[1]))
+			ok := Caches.Hexist(string(req[1]), string(req[2]))
 			if !ok {
-				//res = fmt.Sprintf(":0\r\n")
 				tc.wbuffer.WriteString(":0\r\n")
 			} else {
-				_, ok = v.Get(string(req[2]))
-				if !ok {
-					//res = fmt.Sprintf(":0\r\n")
-					tc.wbuffer.WriteString(":0\r\n")
-				} else {
-					//res = fmt.Sprintf(":1\r\n")
-					tc.wbuffer.WriteString(":1\r\n")
-				}
+				tc.wbuffer.WriteString(":1\r\n")
 			}
 
 		case "HSET":
-			v, ok := hmapRead(string(req[1]))
-			if !ok {
-				v = hashmap.New(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-				hmapWrite(string(req[1]), v)
-			}
-			v.Set(string(req[2]), req[3], hashmap.NoExpiration)
-			//res = fmt.Sprintf(":1\r\n")
-			tc.wbuffer.WriteString(":1\r\n")
-
-		case "HMSET":
-			if size%2 != 0 || size == 2 {
-				err = fmt.Errorf("parameters error")
-				return
-			}
-			v, ok := hmapRead(string(req[1]))
-			if !ok {
-				v = hashmap.New(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-				hmapWrite(string(req[1]), v)
-			}
-
-			for i := 2; i < size; i = i + 2 {
-				v.Set(string(req[i]), req[i+1], hashmap.NoExpiration)
-			}
-			//mlog.Debug("hmset:size-%d", size)
-			tc.wbuffer.WriteString(":1\r\n")
-
-		case "HGET":
-			v, ok := hmapRead(string(req[1]))
-			if !ok {
-				err = fmt.Errorf("not find the key:%s", string(req[1]))
-				return
-			}
-			dst, found := v.Get(string(req[2]))
-			if !found {
-				err = fmt.Errorf("not find the key:%s", string(req[2]))
-				return
-			} else {
-				vs := dst.([]byte)
-				//res = fmt.Sprintf("$%d\r\n%s\r\n", len(vs), vs)
-				fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(vs), vs)
-			}
-		case "HMGET":
-			v, ok := hmapRead(string(req[1]))
-			if !ok {
-				err = fmt.Errorf("not find the key:%s", string(req[1]))
-				return
-			}
-			//mlog.Debug("hmget,size:%d", size)
-			fmt.Fprintf(tc.wbuffer, "*%d\r\n", size-2)
-			for i := 2; i < size; i++ {
-				dst, found := v.Get(string(req[i]))
-				if !found {
-					err = fmt.Errorf("not find the field:%s", string(req[i]))
-					return
-				}
-				vs := dst.([]byte)
-				//res = fmt.Sprintf("$%d\r\n%s\r\n", len(vs), vs)
-				fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(vs), vs)
-			}
-
-		case "HDEL":
-			v, ok := hmapRead(string(req[1]))
-			if ok {
-				v.Delete(string(req[2]))
-			}
-			//res = fmt.Sprintf(":1\r\n")
-			tc.wbuffer.WriteString(":1\r\n")
-
-		case "HDESTROY":
-			hmapdel(string(req[1]))
+			Caches.Hset(string(req[1]), string(req[2]), string(req[3]), hashmap.NoExpiration)
 			tc.wbuffer.WriteString(":1\r\n")
 
 		case "HSETEX":
@@ -335,44 +264,70 @@ func readResponse(tc *tclient) (res []byte, err error) {
 				err = fmt.Errorf("parameters error")
 				return
 			}
-			v, ok := hmapRead(string(req[1]))
-			if !ok {
-				//return nil,fmt.Errorf("not find the key:%s",string(req[1]))
-				v = hashmap.New(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-				hmapWrite(string(req[1]), v)
-			}
 			expi, err = strconv.Atoi(string(req[3]))
 			if err != nil {
 				err = fmt.Errorf("setex expected a time expiration")
 				return
 			}
-			v.Set(string(req[2]), req[4], time.Duration(expi*1e9))
-			//res = fmt.Sprintf(":0\r\n")
+			Caches.Hset(string(req[1]), string(req[2]), string(req[3]), time.Duration(expi*1e9))
 			tc.wbuffer.WriteString(":0\r\n")
+
+		case "HMSET":
+			if size%2 != 0 || size == 2 {
+				err = fmt.Errorf("parameters error")
+				return
+			}
+			Caches.Hmset(string(req[1]), req[2:size])
+			tc.wbuffer.WriteString(":1\r\n")
+
+		case "HGET":
+			var v interface{}
+			v, err = Caches.Hget(string(req[1]), string(req[2]))
+			if err != nil {
+				return
+			}
+			vs := v.([]byte)
+			fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(vs), vs)
+
+		case "HMGET":
+			if size < 3 {
+				err = fmt.Errorf("parameters error")
+				return
+			}
+			var data [][]byte
+			data, err = Caches.Hmget(string(req[1]), req[2:size])
+			if err != nil {
+				return
+			}
+			//log.Debug("hmget,size:%d", size)
+			fmt.Fprintf(tc.wbuffer, "*%d\r\n", size-2)
+			for i := 0; i < len(data); i++ {
+				fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(data[i]), data[i])
+			}
+
+		case "HDEL":
+			Caches.Hdel(string(req[1]), string(req[2]))
+			//res = fmt.Sprintf(":1\r\n")
+			tc.wbuffer.WriteString(":1\r\n")
+
+		case "HDESTROY":
+			Caches.Hdestroy(string(req[1]))
+			tc.wbuffer.WriteString(":1\r\n")
 
 		case "KEYS":
 			if size < 2 {
 				err = fmt.Errorf("parameters error")
 				return
 			}
-			/*
-				var prefix string == ""
-				if req[1] != "*" {
-					prefix = strings.TrimSuffix("*")
-				}
-			*/
 
-			var count, ct int = 0, 0
+			var count int = 0
 			_, err = fmt.Fprintf(tc.wbuffer, "*%10d\r\n", count)
 			if err != nil {
 				return
 			}
-			for i := 0; i < KEYHASHMAX; i++ {
-				ct, err = CacheSet[i].Getallkey(tc.wbuffer)
-				if err != nil {
-					return
-				}
-				count += ct
+			count, err = Caches.Getallkey(tc.wbuffer)
+			if err != nil {
+				return
 			}
 			countstr := fmt.Sprintf("%10d", count)
 			copy(tc.wbuffer.Bytes()[1:11], []byte(countstr))
@@ -382,25 +337,19 @@ func readResponse(tc *tclient) (res []byte, err error) {
 				err = fmt.Errorf("parameters error")
 				return
 			}
-			ke, ok := hmapRead(string(req[1]))
-			if !ok {
-				err = fmt.Errorf("not find the key:%s", string(req[1]))
-				return
-			}
-
-			err = ke.Getall(tc.wbuffer)
+			err = Caches.Hgetall(string(req[1]), tc.wbuffer)
 			if err != nil {
 				return
 			}
 			//fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n",count,,)
 
 		default:
-			mlog.Warn("request not support:%s", string(req[0]))
+			log.Warn("request not support:%s", string(req[0]))
 			err = fmt.Errorf("req not support")
 			return
 		}
 		res = tc.wbuffer.Bytes()
-		//mlog.Debug("res:%s,length:%d", string(res), len(res))
+		//log.Debug("res:%s,length:%d", string(res), len(res))
 		return
 	}
 	err = fmt.Errorf("req not support")
@@ -410,7 +359,7 @@ func readResponse(tc *tclient) (res []byte, err error) {
 }
 
 func readTrequest(conn *net.TCPConn) {
-	mlog.Info("get in access tcp connection")
+	log.Info("get in access tcp connection")
 	tc := newClient(conn)
 	tc.le = termList.PushFront(tc)
 	defer tc.Clear()
@@ -423,15 +372,15 @@ func readTrequest(conn *net.TCPConn) {
 			break
 		}
 		if err != nil {
-			mlog.Warn("%v", err)
+			log.Warn("%v", err)
 			data = []byte(fmt.Sprintf("-ERR%s\r\n", err.Error()))
 		}
 
-		//mlog.Debug("response:%s\n", string(data))
+		//log.Debug("response:%s\n", string(data))
 
 		_, err = tc.conn.Write(data)
 		if err != nil {
-			mlog.Error("tcp write error:%v", err)
+			log.Error("tcp write error:%v", err)
 		}
 		tc.rder.Reset(tc.conn)
 		tc.wbuffer.Reset()

@@ -1,0 +1,8 @@
+[marginCache]
+tcpListenPort=6380
+# 0:Fatal,1:Error,2:Warn,3:Info,4:Debug
+logLevel= 4 
+
+[proxy]
+listen = ":8000"
+backends = ["192.168.34.41:6380","192.168.34.41:6390"]
