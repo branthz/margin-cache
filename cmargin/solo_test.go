@@ -32,7 +32,10 @@ func Benchmark_Hget(b *testing.B) {
 		}
 	}
 }
-
+func TestMsg(t *testing.T){
+	b:=commandBytes("set","hello","world")
+	t.Logf("%q",string(b))
+}
 func TestBasic(t *testing.T) {
 	var val []byte
 	var err error
