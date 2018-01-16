@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // timer manage for expired keys
+
 package hashmap
 
 import (
@@ -19,7 +20,7 @@ type timer struct {
 	// a well-behaved function and not block.
 	when   int64
 	period int64
-	f      func(interface{},string)
+	f      func(interface{}, string)
 	arg    interface{}
 	key    string
 }
@@ -38,6 +39,9 @@ type timerst struct {
 var timers *timerst
 
 func setup() {
+	if timers != nil {
+		return
+	}
 	timers = new(timerst)
 	timers.waitc = make(chan int)
 	timers.waitnote.slp = make(chan int64)

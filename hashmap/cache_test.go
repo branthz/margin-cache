@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+func init() {
+	setup()
+}
+
 type TestStruct struct {
 	Num      int
 	Children []*TestStruct
