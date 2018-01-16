@@ -6,7 +6,7 @@ margin is a stateless , the data will lose when the progress restarted, so the c
 margin will record the init time so that the client-side can maintain the heartbeat through the ping command with it, margin return pong and carries the init time.
 client can judge whether server has restarted by the value of time if needed.
 
-##Support Command
+## Support Command
 Apis can refer to http://redis.io/commands, Now it supports the following cmd:
 * set key value                                      
 * get key                                                
@@ -39,7 +39,7 @@ $ go get github.com/branthz/margin-cache
 ```
 
 ----------------------------------------------------
-##TODO:
+## TODO:
 1.Support the Restful api
 2.Support functions like list/set/publish/subscribe ...
 

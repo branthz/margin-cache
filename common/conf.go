@@ -1,3 +1,8 @@
+// Copyright 2017 The margin Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
+// Package common provides app's configure and tools.
 package common
 
 import (
@@ -13,7 +18,7 @@ const (
 	sectionName = "marginCache"
 )
 
-//AppOp save the app configue
+//AppOp saves the app configure
 type AppOp struct {
 	Outport  int
 	loglevel int

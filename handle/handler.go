@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
+// Package handle deals with the commands(get/set ...)
 package handle
 
 import (
@@ -22,10 +23,13 @@ import (
 )
 
 var (
+	// caches to store k/v
 	Caches   *hashmap.Dbs
+	// app's start time
 	GstartTime = time.Now().Unix()
 )
 
+// get the default caches which has been initialised.
 func Init() {
 	Caches = hashmap.GetDB()
 	if Caches == nil {
@@ -33,23 +37,24 @@ func Init() {
 	}
 }
 
-type tclient struct {
+// tcp client 
+type client struct {
 	conn    *net.TCPConn
 	wbuffer *bytes.Buffer
 	le      *list.Element
 	rder    *bufio.Reader
 }
 
-func newClient(pconn *net.TCPConn) *tclient {
-	return &tclient{
+func newClient(pconn *net.TCPConn) *client {
+	return &client{
 		conn:    pconn,
 		wbuffer: bytes.NewBuffer(make([]byte, 1024)),
 		rder:    bufio.NewReader(pconn),
 		le:      nil,
 	}
 }
-
-func (tc *tclient) Clear() {
+// release the client
+func (tc *client) Clear() {
 	tc.conn.Close()
 	tc.wbuffer = nil
 	tc.rder = nil
@@ -112,7 +117,7 @@ func readBulk(reader *bufio.Reader, head string) ([]byte, error) {
 	return data, err
 }
 
-func readResponse(tc *tclient) (res []byte, err error) {
+func readResponse(tc *client) (res []byte, err error) {
 	var line string
 	err = nil
 	var size, expi int
@@ -354,10 +359,9 @@ func readResponse(tc *tclient) (res []byte, err error) {
 	}
 	err = fmt.Errorf("req not support")
 	return
-
-	//return readBulk(tc.rder, line)
 }
 
+// read the request and return the response
 func readTrequest(conn *net.TCPConn) {
 	log.Info("get in access tcp connection")
 	tc := newClient(conn)
