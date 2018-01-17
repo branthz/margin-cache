@@ -257,7 +257,7 @@ func readResponse(tc *client) (res []byte, err error) {
 			}
 
 		case "HSET":
-			Caches.Hset(string(req[1]), string(req[2]), string(req[3]), hashmap.NoExpiration)
+			Caches.Hset(string(req[1]), string(req[2]), req[3], hashmap.NoExpiration)
 			tc.wbuffer.WriteString(":1\r\n")
 
 		case "HSETEX":
@@ -270,7 +270,7 @@ func readResponse(tc *client) (res []byte, err error) {
 				err = fmt.Errorf("setex expected a time expiration")
 				return
 			}
-			Caches.Hset(string(req[1]), string(req[2]), string(req[3]), time.Duration(expi*1e9))
+			Caches.Hset(string(req[1]), string(req[2]), req[3], time.Duration(expi*1e9))
 			tc.wbuffer.WriteString(":0\r\n")
 
 		case "HMSET":
