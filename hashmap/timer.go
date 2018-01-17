@@ -37,16 +37,15 @@ type timerst struct {
 }
 
 var timers *timerst
-
+var timerOnce sync.Once
 func setup() {
-	if timers != nil {
-		return
-	}
+	timerOnce.Do(func(){
 	timers = new(timerst)
 	timers.waitc = make(chan int)
 	timers.waitnote.slp = make(chan int64)
 	timers.waitnote.recv = make(chan int)
-	go timers.waitnote.notewait()
+	//go timers.waitnote.notewait()
+	})
 }
 
 func goready(n int) {
@@ -227,11 +226,12 @@ func (n *note) notetsleepg(t int64) {
 	if t < 1000 {
 		return
 	}
-	n.slp <- t
+
 	atomic.StoreUintptr(&n.key, noteSleep)
-	for {
-		<-n.recv
-		n.key = noteFree
+	select {
+	case <- n.recv:
+		break
+	case <- time.After(time.Duration(t)):
 		break
 	}
 }
