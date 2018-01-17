@@ -45,6 +45,9 @@ var (
 // The file argument defines the write log file path.
 // if any error the os.Stdout will return
 func Setup(file string, level int) (err error) {
+	if selfHold != nil {
+		return nil
+	}
 	selfHold, err = New(file, level)
 	return
 }

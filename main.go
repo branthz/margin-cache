@@ -15,5 +15,5 @@ func main() {
 	common.Init()
 	log.Info("marginCache start...")
 	hashmap.DBSetup(hashmap.NoExpiration, hashmap.DefaultCleanUpInterval)
-	handle.Start()
+	handle.Start(common.CFV.Outport)
 }

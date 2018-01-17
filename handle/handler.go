@@ -8,7 +8,6 @@ package handle
 import (
 	"bufio"
 	"bytes"
-	"container/list"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/branthz/margin-cache/common"
 	"github.com/branthz/margin-cache/common/log"
 	"github.com/branthz/margin-cache/hashmap"
 )
@@ -41,8 +39,8 @@ func Init() {
 type client struct {
 	conn    *net.TCPConn
 	wbuffer *bytes.Buffer
-	le      *list.Element
-	rder    *bufio.Reader
+	//le      *list.Element
+	rder *bufio.Reader
 }
 
 func newClient(pconn *net.TCPConn) *client {
@@ -50,7 +48,7 @@ func newClient(pconn *net.TCPConn) *client {
 		conn:    pconn,
 		wbuffer: bytes.NewBuffer(make([]byte, 1024)),
 		rder:    bufio.NewReader(pconn),
-		le:      nil,
+		//le:      nil,
 	}
 }
 
@@ -59,14 +57,14 @@ func (tc *client) Clear() {
 	tc.conn.Close()
 	tc.wbuffer = nil
 	tc.rder = nil
-	termList.Remove(tc.le)
+	//termList.Remove(tc.le)
 }
 
 //Start run a tcp server
-func Start() {
+func Start(port int) {
 	Init()
 	tcpAddr := &net.TCPAddr{
-		Port: common.CFV.Outport,
+		Port: port,
 	}
 	tcpConn, err := net.ListenTCP("tcp4", tcpAddr)
 	if err != nil {
@@ -128,7 +126,7 @@ func readResponse(tc *client) (res []byte, err error) {
 	for {
 		line, err = tc.rder.ReadString('\n')
 		if len(line) == 0 || err != nil {
-			if err != io.EOF{
+			if err != io.EOF {
 				log.Error("%v", err)
 			}
 			return
@@ -358,7 +356,7 @@ func readResponse(tc *client) (res []byte, err error) {
 // read the request and return the response
 func readTrequest(conn *net.TCPConn) {
 	tc := newClient(conn)
-	tc.le = termList.PushFront(tc)
+	//tc.le = termList.PushFront(tc)
 	defer tc.Clear()
 	var data []byte
 	var err error
