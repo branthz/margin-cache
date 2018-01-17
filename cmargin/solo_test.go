@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
-
-	"github.com/branthz/margin-cache/common"
-	"github.com/branthz/margin-cache/handle"
 )
 
 var (
@@ -22,8 +19,6 @@ func init() {
 	//client.Addr = "192.168.206.110:6380"
 	client.Addr = "127.0.0.1:6380"
 	client.MaxPoolSize = 5
-	common.Init()
-	go handle.Start()
 }
 
 func Benchmark_Hget(b *testing.B) {
