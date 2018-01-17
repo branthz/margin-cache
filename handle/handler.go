@@ -149,7 +149,7 @@ func readResponse(tc *client) (res []byte, err error) {
 			err = fmt.Errorf("cmd size less than 0")
 			return
 		}
-		log.Debug("request parameters:")
+		//log.Debug("request parameters:")
 		req := make([][]byte, size)
 		for i := 0; i < size; i++ {
 			req[i], err = readBulk(tc.rder, "")
@@ -212,7 +212,7 @@ func readResponse(tc *client) (res []byte, err error) {
 			fmt.Fprintf(tc.wbuffer, ":%d\r\n", v)
 
 		case "SET":
-			Caches.Set(string(req[1]), string(req[2]), hashmap.NoExpiration)
+			Caches.Set(string(req[1]), req[2], hashmap.NoExpiration)
 			tc.wbuffer.WriteString(":1\r\n")
 
 		case "GET":
@@ -221,7 +221,7 @@ func readResponse(tc *client) (res []byte, err error) {
 				err = fmt.Errorf("not find the key:%s", string(req[1]))
 				return
 			}
-			vs := v.(string)
+			vs := v.([]byte)
 			fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(vs), vs)
 
 		case "DEL":
@@ -238,7 +238,7 @@ func readResponse(tc *client) (res []byte, err error) {
 				err = fmt.Errorf("setex expected a time expiration")
 				return
 			}
-			Caches.Set(string(req[1]), string(req[3]), time.Duration(expi*1e9))
+			Caches.Set(string(req[1]), req[3], time.Duration(expi*1e9))
 			tc.wbuffer.WriteString("+\r\nok")
 
 		case "EXISTS":
@@ -357,7 +357,6 @@ func readResponse(tc *client) (res []byte, err error) {
 
 // read the request and return the response
 func readTrequest(conn *net.TCPConn) {
-	log.Info("get in access tcp connection")
 	tc := newClient(conn)
 	tc.le = termList.PushFront(tc)
 	defer tc.Clear()
