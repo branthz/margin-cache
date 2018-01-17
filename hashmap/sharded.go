@@ -272,7 +272,7 @@ func newShardedCache(n int, de time.Duration) *shardedCache {
 }
 
 //Maxbuckets define buckets count.
-const Maxbuckets = 30
+const Maxbuckets = 128
 
 //DBSetup init dbs
 func DBSetup(defaultExpiration, cleanupInterval time.Duration) *Dbs {

@@ -19,6 +19,7 @@ Apis can refer to http://redis.io/commands, Now it supports the following cmd:
 * hset key field value                                   
 * hget key field                                            
 * hsetex  key field value time                           
+this not like exprie key in redis;it expire the field.
 * hdel key field                                         
 * hexists key field                                     
 * hdestroy key                                            
@@ -32,6 +33,28 @@ Apis can refer to http://redis.io/commands, Now it supports the following cmd:
 * HMGET key field1 field2 ...				  
 * KEYS *      						  
 
+## Single Host Performance
+
+Intel(R) Xeon(R) CPU E5620  @ 2.40GHz(8 cores)  
+use the redis-benchmark tool
+```
+# redis-benchmark -h 127.0.0.1 -p 6380 -t set -r 1000000 -n 1000000 -d 2048
+====== SET ======
+  1000000 requests completed in 12.75 seconds
+  50 parallel clients
+  2048 bytes payload
+  keep alive: 1
+78449.84 requests per second
+
+#redis-benchmark -h 127.0.0.1 -p 6380 -t  get  -r 10000 -n 5000000 -d 2048 -c 500
+====== GET ======
+  5000000 requests completed in 68.11 seconds
+  500 parallel clients
+  2048 bytes payload
+  keep alive: 1
+73406.35 requests per second
+```
+
 ## Getting Started
 ### Installing
 To start using margin-cache, install Go and run `go get`:
@@ -41,6 +64,26 @@ $ go get github.com/branthz/margin-cache
 $ cd $GOPATH/src/github.com/branthz/margin-cache
 $ make
 $ ./marginCache -c marginCache.toml
+```
+This will bring up margin-cache listening on port 6380 for client communication 
+
+### Proxy
+you can also use tcp proxy which applied with consitent-hash in front of margin-cache.
+proxy will detect the cache's status if one is down, proxy will rehashing all the keys in backends and migrating them automatically. 
+example deployment  
+```
+graph LR;
+A1[Proxy1]
+A2[Proxy2]
+B1[Margin1]
+B2[Margin2]
+B3[Margin3]
+A1-->B1
+A1-->B2
+A1-->B3
+A2-->B1
+A2-->B2
+A2-->B3
 ```
 
 ## Example
