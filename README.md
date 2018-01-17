@@ -68,24 +68,9 @@ $ ./marginCache -c marginCache.toml
 This will bring up margin-cache listening on port 6380 for client communication 
 
 ### Proxy
-you can also use tcp proxy which applied with consitent-hash in front of margin-cache.
+you can also use tcp proxy which applied with consitent-hash in front of multiple margin-caches.
 proxy will detect the cache's status if one is down, proxy will rehashing all the keys in backends and migrating them automatically. 
-example deployment  
-```
-graph LR;
-A1[Proxy1]
-A2[Proxy2]
-B1[Margin1]
-B2[Margin2]
-B3[Margin3]
-A1-->B1
-A1-->B2
-A1-->B3
-A2-->B1
-A2-->B2
-A2-->B3
-```
-
+![image](https://raw.githubusercontent.com/branthz/resource/master/pic/proxy-margin.png)
 ## Example
 this shows how to write your own code with cmargin package 
 ```go
