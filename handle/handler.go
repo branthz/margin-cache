@@ -128,7 +128,9 @@ func readResponse(tc *client) (res []byte, err error) {
 	for {
 		line, err = tc.rder.ReadString('\n')
 		if len(line) == 0 || err != nil {
-			log.Info("%v", err)
+			if err != io.EOF{
+				log.Error("%v", err)
+			}
 			return
 		}
 		line = strings.TrimSpace(line)
@@ -157,15 +159,14 @@ func readResponse(tc *client) (res []byte, err error) {
 			if err != nil {
 				return
 			}
-			fmt.Printf("%s-----\n", string(req[i]))
+			//fmt.Printf("%s-----\n", string(req[i]))
 			// dont read end of line as might not have been bulk
 		}
-		fmt.Printf("\n")
+		//fmt.Printf("\n")
 		tc.wbuffer.Reset()
 
 		switch string(req[0]) {
 		case "PING":
-			//res = fmt.Sprintf(":%d\r\n", GstartTime)
 			fmt.Fprintf(tc.wbuffer, ":%d\r\n", GstartTime)
 
 		case "DECR":
@@ -174,7 +175,6 @@ func readResponse(tc *client) (res []byte, err error) {
 			if err != nil {
 				return
 			}
-			//res = fmt.Sprintf(":%d\r\n", v)
 			fmt.Fprintf(tc.wbuffer, ":%d\r\n", v)
 		case "DECRBY":
 			var v int64
@@ -187,7 +187,6 @@ func readResponse(tc *client) (res []byte, err error) {
 			if err != nil {
 				return
 			}
-			//res = fmt.Sprintf(":%d\r\n", v)
 			fmt.Fprintf(tc.wbuffer, ":%d\r\n", v)
 
 		case "INCRBY":
@@ -201,7 +200,6 @@ func readResponse(tc *client) (res []byte, err error) {
 			if err != nil {
 				return
 			}
-			//res = fmt.Sprintf(":%d\r\n", v)
 			fmt.Fprintf(tc.wbuffer, ":%d\r\n", v)
 
 		case "INCR":
@@ -211,12 +209,10 @@ func readResponse(tc *client) (res []byte, err error) {
 			if err != nil {
 				return
 			}
-			//res = fmt.Sprintf(":%d\r\n", v)
 			fmt.Fprintf(tc.wbuffer, ":%d\r\n", v)
 
 		case "SET":
 			Caches.Set(string(req[1]), string(req[2]), hashmap.NoExpiration)
-			//res = fmt.Sprintf("+\r\nok")
 			tc.wbuffer.WriteString(":1\r\n")
 
 		case "GET":
@@ -226,7 +222,6 @@ func readResponse(tc *client) (res []byte, err error) {
 				return
 			}
 			vs := v.(string)
-			//res = fmt.Sprintf("$%d\r\n%s\r\n", len(vs), vs)
 			fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n", len(vs), vs)
 
 		case "DEL":
@@ -244,7 +239,6 @@ func readResponse(tc *client) (res []byte, err error) {
 				return
 			}
 			Caches.Set(string(req[1]), string(req[3]), time.Duration(expi*1e9))
-			//res = fmt.Sprintf("+\r\nok")
 			tc.wbuffer.WriteString("+\r\nok")
 
 		case "EXISTS":
@@ -314,7 +308,6 @@ func readResponse(tc *client) (res []byte, err error) {
 
 		case "HDEL":
 			Caches.Hdel(string(req[1]), string(req[2]))
-			//res = fmt.Sprintf(":1\r\n")
 			tc.wbuffer.WriteString(":1\r\n")
 
 		case "HDESTROY":
@@ -348,7 +341,6 @@ func readResponse(tc *client) (res []byte, err error) {
 			if err != nil {
 				return
 			}
-			//fmt.Fprintf(tc.wbuffer, "$%d\r\n%s\r\n",count,,)
 
 		default:
 			log.Warn("request not support:%s", string(req[0]))

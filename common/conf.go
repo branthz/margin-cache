@@ -25,7 +25,7 @@ type AppOp struct {
 }
 
 var (
-	filePath *string = flag.String("f", "/etc/marginCache.toml", "keep the config info")
+	filePath *string = flag.String("c", "/etc/marginCache.toml", "keep the config info")
 	CFV      *AppOp
 )
 
