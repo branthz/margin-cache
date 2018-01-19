@@ -16,22 +16,15 @@ import (
 	"time"
 )
 
-// Proxy is a proxy. Its zero value is a valid proxy that does
-// nothing. Call methods to add routes before calling Start or Run.
-//
-// The order that routes are added in matters; each is matched in the order
-// registered.
+// Proxy is a proxy.
 type Proxy struct {
-	// ip:port => config
 	configs   *config
 	LocalHost string
 	lns       net.Listener
 	donec     chan struct{} // closed before err
 	err       error         // any error from listening
 
-	// ListenFunc optionally specifies an alternate listen
-	// function. If nil, net.Dial is used.
-	// The provided net is always "tcp".
+	// ListenFunc optionally specifies an alternate listen function.
 	ListenFunc func(net, laddr string) (net.Listener, error)
 }
 
@@ -49,7 +42,7 @@ func equals(want string) Matcher {
 type config struct {
 	routes []route
 	consis *Consistent
-	mroute route
+	endpoints []*remote
 }
 
 func (c *config) match(b *bufio.Reader) Target {
@@ -59,18 +52,24 @@ func (c *config) match(b *bufio.Reader) Target {
 }
 
 func (c *config) addRoute(dst string, tar Target) {
+	r:=new(remote)
+	r.addr=dst 
+	r.inactive=false 
+	c.endpoints=append(c.endpoints,r)
 	c.consis.Add(dst, tar)
+}
+
+func (c *config) removeEnd(id string){
+	c.consis.Remove(id)
+	for _,v:=range c.endpoints{
+		if v.addr !=id {
+			v.needrehash = true	
+		}	
+	}
 }
 
 // A route matches a connection to a target.
 type route interface {
-	// match examines the initial bytes of a connection, looking for a
-	// match. If a match is found, match returns a non-nil Target to
-	// which the stream should be proxied. match returns nil if the
-	// connection doesn't match.
-	//
-	// match must not consume bytes from the given bufio.Reader, it
-	// can only Peek.
 	match(*bufio.Reader) Target
 }
 
@@ -109,9 +108,6 @@ func (m fixedTarget) match(*bufio.Reader) Target {
 }
 
 // Run is calls Start, and then Wait.
-//
-// It blocks until there's an error. The return value is always
-// non-nil.
 func (p *Proxy) Run() error {
 	if err := p.Start(); err != nil {
 		return err
@@ -119,10 +115,7 @@ func (p *Proxy) Run() error {
 	return p.Wait()
 }
 
-// Wait waits for the Proxy to finish running. Currently this can only
-// happen if a Listener is closed, or Close is called on the proxy.
-//
-// It is only valid to call Wait after a successful call to Start.
+// Wait waits for the Proxy to finish running. 
 func (p *Proxy) Wait() error {
 	<-p.donec
 	return p.err
@@ -135,11 +128,7 @@ func (p *Proxy) Close() error {
 }
 
 // Start creates a TCP listener
-// and starts the proxy. It returns any
-// error from starting listeners.
-//
-// If it returns a non-nil error, any successfully opened listeners
-// are closed.
+// and starts the proxy.
 func (p *Proxy) Start() error {
 	if p.donec != nil {
 		return errors.New("already started")
@@ -195,9 +184,6 @@ func (p *Proxy) serveConn(c net.Conn, route *config) bool {
 	return false
 }
 
-// Conn is an incoming connection that has had some bytes read from it
-// to determine how to route the connection. The Read method stitches
-// the peeked bytes and unread bytes back together.
 type Conn struct {
 	// Peeked are the bytes that have been read from Conn for the
 	// purposes of route matching, but have not yet been consumed
@@ -223,35 +209,22 @@ func (c *Conn) Read(p []byte) (n int, err error) {
 // Target is what an incoming matched connection is sent to.
 type Target interface {
 	// HandleConn is called when an incoming connection is
-	// matched. After the call to HandleConn, the tcpproxy
-	// package never touches the conn again. Implementations are
-	// responsible for closing the connection when needed.
-	//
-	// The concrete type of conn will be of type *Conn if any
-	// bytes have been consumed for the purposes of route
-	// matching.
+	// matched. 
 	HandleConn(net.Conn)
 }
 
-// To is shorthand way of writing &tlsproxy.DialProxy{Addr: addr}.
 func To(addr string) *DialProxy {
 	return &DialProxy{Addr: addr}
 }
 
 // DialProxy implements Target by dialing a new connection to Addr
 // and then proxying data back and forth.
-//
-// The To func is a shorthand way of creating a DialProxy.
 type DialProxy struct {
 	// Addr is the TCP address to proxy to.
 	Addr string
 
-	// KeepAlivePeriod sets the period between TCP keep alives.
-	// If zero, a default is used. To disable, use a negative number.
-	// The keep-alive is used for both the client connection and
 	KeepAlivePeriod time.Duration
 
-	// DialTimeout optionally specifies a dial timeout.
 	// If zero, a default is used.
 	// If negative, the timeout is disabled.
 	DialTimeout time.Duration
@@ -262,17 +235,8 @@ type DialProxy struct {
 	DialContext func(ctx context.Context, network, address string) (net.Conn, error)
 
 	// OnDialError optionally specifies an alternate way to handle errors dialing Addr.
-	// If nil, the error is logged and src is closed.
-	// If non-nil, src is not closed automatically.
 	OnDialError func(src net.Conn, dstDialErr error)
 
-	// ProxyProtocolVersion optionally specifies the version of
-	// HAProxy's PROXY protocol to use. The PROXY protocol provides
-	// connection metadata to the DialProxy target, via a header
-	// inserted ahead of the client's traffic. The DialProxy target
-	// must explicitly support and expect the PROXY header; there is
-	// no graceful downgrade.
-	// If zero, no PROXY header is sent. Currently, version 1 is supported.
 	ProxyProtocolVersion int
 }
 
@@ -355,8 +319,6 @@ func (dp *DialProxy) sendProxyHeader(w io.Writer, src net.Conn) error {
 }
 
 // proxyCopy is the function that copies bytes around.
-// It's a named function instead of a func literal so users get
-// named goroutines in debug goroutine stack dumps.
 func proxyCopy(errc chan<- error, dst io.Writer, src io.Reader) {
 	_, err := io.Copy(dst, src)
 	errc <- err

@@ -17,12 +17,6 @@ func (p *Proxy) AddHTTPHostRoute(httpHost string, dest Target) {
 	p.AddHTTPHostMatchRoute(equals(httpHost), dest)
 }
 
-// AddHTTPHostMatchRoute appends a route to the ipPort listener that
-// routes to dest if the incoming HTTP/1.x Host header name is
-// accepted by matcher. If it doesn't match, rule processing continues
-// for any additional routes on ipPort.
-//
-// The ipPort is any valid net.Listen TCP address.
 func (p *Proxy) AddHTTPHostMatchRoute(match Matcher, dest Target) {
 	p.addRoute(httpHostMatch{match, dest})
 }
