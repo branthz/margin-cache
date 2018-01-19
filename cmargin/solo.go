@@ -35,6 +35,13 @@ type Client struct {
 	pool chan net.Conn
 }
 
+func (c *Client)Close(){
+	close(c.pool)
+	for v:=range c.pool{
+		v.Close()	
+	}
+}
+
 type marginError string
 
 func (err marginError) Error() string { return "margin Error: " + string(err) }

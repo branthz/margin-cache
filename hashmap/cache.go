@@ -70,8 +70,6 @@ func (c *cache) Set(k string, x interface{}, d time.Duration) {
 		Object:     x,
 		Expiration: e,
 	}
-	// TODO: Calls to mu.Unlock are currently not deferred because defer
-	// adds ~200 ns (as of go1.)
 	c.mu.Unlock()
 }
 
@@ -103,8 +101,6 @@ func (c *cache) Add(k string, x interface{}, d time.Duration) error {
 	return nil
 }
 
-// Set a new value for the cache key only if it already exists, and the existing
-// item hasn't expired. Returns an error otherwise.
 func (c *cache) Replace(k string, x interface{}, d time.Duration) error {
 	c.mu.Lock()
 	_, found := c.get(k)
@@ -118,7 +114,6 @@ func (c *cache) Replace(k string, x interface{}, d time.Duration) error {
 }
 
 // Get an item from the cache. Returns the item or nil, and a bool indicating
-// whether the key was found.
 func (c *cache) Get(k string) (interface{}, bool) {
 	c.mu.RLock()
 	// "Inlining" of get and Expired
@@ -192,9 +187,7 @@ func (c *cache) get(k string) (interface{}, bool) {
 
 // Increment an item of type int, int8, int16, int32, int64, uintptr, uint,
 // uint8, uint32, or uint64, float32 or float64 by n. Returns an error if the
-// item's value is not an integer, if it was not found, or if it is not
-// possible to increment it by n. To retrieve the incremented value, use one
-// of the specialized methods, e.g. IncrementInt64.
+// item's value is not an integer
 func (c *cache) Increment(k string, n int64) error {
 	c.mu.Lock()
 	v, found := c.items[k]
@@ -240,9 +233,7 @@ func (c *cache) Increment(k string, n int64) error {
 
 // Increment an item of type float32 or float64 by n. Returns an error if the
 // item's value is not floating point, if it was not found, or if it is not
-// possible to increment it by n. Pass a negative number to decrement the
-// value. To retrieve the incremented value, use one of the specialized methods,
-// e.g. IncrementFloat64.
+// possible to increment it by n. 
 func (c *cache) IncrementFloat(k string, n float64) error {
 	c.mu.Lock()
 	v, found := c.items[k]

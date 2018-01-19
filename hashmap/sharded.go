@@ -44,14 +44,12 @@ type shardedCache struct {
 	janitor *shardedJanitor
 }
 
-// djb2 with better shuffling. 5x faster than FNV with the hash.Hash overhead.
 func djb33(seed uint32, k string) uint32 {
 	var (
 		l = uint32(len(k))
 		d = 5381 + seed + l
 		i = uint32(0)
 	)
-	// Why is all this 5x faster than a for loop?
 	if l >= 4 {
 		for i < l-4 {
 			d = (d * 33) ^ uint32(k[i])
@@ -195,10 +193,7 @@ func (sc *shardedCache) Hgetall(k string, buf *bytes.Buffer) error {
 }
 
 // Returns the items in the cache. This may include items that have expired,
-// but have not yet been cleaned up. If this is significant, the Expiration
-// fields of the items should be checked. Note that explicit synchronization
-// is needed to use a cache and its corresponding Items() return values at
-// the same time, as the maps are shared.
+// but have not yet been cleaned up. 
 func (sc *shardedCache) Items() []map[string]Item {
 	res := make([]map[string]Item, len(sc.cs))
 	for i, v := range sc.cs {

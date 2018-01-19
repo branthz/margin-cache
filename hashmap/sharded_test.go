@@ -7,9 +7,6 @@ import (
 	"time"
 )
 
-// func TestDjb33(t *testing.T) {
-// }
-
 var shardedKeys = []string{
 	"f",
 	"fo",
